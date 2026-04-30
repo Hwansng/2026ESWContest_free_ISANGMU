@@ -66,9 +66,12 @@ rosbag2_*
 *.bag
 *.db3
 
-# ===== 3D Print Slicer Output =====
+# ===== 3D Print =====
+*.stl
 *.gcode
 *.3mf
+# 단, 자체 제작 어댑터(custom/)는 추적
+!hardware/stl/custom/*.stl
 
 # ===== Office temp =====
 ~$*.docx

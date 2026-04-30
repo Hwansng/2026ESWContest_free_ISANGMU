@@ -1,0 +1,54 @@
+name: ROS2 Build (Jazzy)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'ros2_ws/**'
+      - '.github/workflows/ros2.yml'
+  pull_request:
+    paths:
+      - 'ros2_ws/**'
+      - '.github/workflows/ros2.yml'
+
+jobs:
+  colcon-build:
+    runs-on: ubuntu-24.04
+    container:
+      image: ros:jazzy-ros-base
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Detect ROS2 packages
+        id: detect
+        run: |
+          if find ros2_ws/src -name 'package.xml' -print -quit | grep -q .; then
+            echo "has_pkgs=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_pkgs=false" >> $GITHUB_OUTPUT
+            echo "::notice::ros2_ws/src에 ROS2 패키지가 아직 없음. 빌드 단계 건너뜀."
+          fi
+
+      - name: Install dependencies
+        if: steps.detect.outputs.has_pkgs == 'true'
+        run: |
+          apt-get update
+          rosdep update
+          rosdep install --from-paths ros2_ws/src --ignore-src -y --rosdistro jazzy
+
+      - name: colcon build
+        if: steps.detect.outputs.has_pkgs == 'true'
+        shell: bash
+        run: |
+          source /opt/ros/jazzy/setup.bash
+          cd ros2_ws
+          colcon build --symlink-install --event-handlers console_direct+
+
+      - name: colcon test
+        if: steps.detect.outputs.has_pkgs == 'true'
+        shell: bash
+        run: |
+          source /opt/ros/jazzy/setup.bash
+          cd ros2_ws
+          colcon test --event-handlers console_direct+
+          colcon test-result --verbose

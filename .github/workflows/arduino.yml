@@ -1,0 +1,39 @@
+name: Arduino Compile (ESP32)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'firmware/esp32_amr/**'
+      - 'firmware/esp32_arm/**'
+      - '.github/workflows/arduino.yml'
+  pull_request:
+    paths:
+      - 'firmware/esp32_amr/**'
+      - 'firmware/esp32_arm/**'
+      - '.github/workflows/arduino.yml'
+
+jobs:
+  compile:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        sketch:
+          - firmware/esp32_amr
+          - firmware/esp32_arm
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compile sketch ${{ matrix.sketch }}
+        uses: arduino/compile-sketches@v1
+        with:
+          fqbn: esp32:esp32:esp32
+          platforms: |
+            - name: esp32:esp32
+              source-url: https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
+              version: 3.0.7
+          sketch-paths: |
+            - ${{ matrix.sketch }}
+          enable-warnings-report: true
+          enable-deltas-report: false
