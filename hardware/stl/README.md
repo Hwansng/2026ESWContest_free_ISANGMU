@@ -2,28 +2,13 @@
 
 본 폴더에는 SO-ARM101 6DOF 로봇 암 프레임 STL 파일을 배치한다. **STL 자체는 git 추적에서 제외**(`.gitignore` `*.stl`)되며, 각자 아래 절차로 다운로드한다.
 
-## 다운로드 방법
+## 다운로드 (수동)
 
-### 자동 (권장)
-
-**Windows PowerShell:**
-```powershell
-.\download_stl.ps1
-```
-
-**Linux / macOS / Git Bash:**
-```bash
-bash download_stl.sh
-```
-
-### 수동
 1. Hugging Face LeRobot 저장소 접속: https://github.com/huggingface/lerobot
-2. `lerobot/common/robot_devices/robots/configs` 또는 SO-ARM 관련 디렉토리에서 STL 파일 확보
+2. SO-ARM 관련 디렉토리에서 STL 파일 확보 (저장소 구조는 변경될 수 있으므로 최신 docs 참고)
 3. 본 디렉토리(`hardware/stl/`)에 배치
 
-> LeRobot 저장소 구조는 변경될 수 있다. 다운로드 스크립트도 주기적으로 점검 필요.
-
-## 필요한 파트 목록 (예시, 실제 모델 기준 조정)
+## 필요 파트 (예시)
 
 | 파일명 | 용도 | 출력 옵션 |
 |---|---|---|
@@ -40,8 +25,8 @@ bash download_stl.sh
 
 LeRobot 원본은 테이블 클램프 고정 설계이므로 **2WD 섀시 마운팅용 베이스 어댑터 플레이트**를 별도 제작한다.
 
-- `chassis_adapter.stl`: 섀시 나사 구멍 ↔ SO-ARM101 베이스 변환 플레이트 (자체 모델링)
-- 위치: 본 폴더 또는 `hardware/stl/custom/` 하위
+- 위치: `hardware/stl/custom/chassis_adapter.stl` (자체 모델링)
+- `.gitignore`에서 `custom/` 하위 STL은 추적 대상으로 예외 처리됨
 
 ## 출력 공차
 
