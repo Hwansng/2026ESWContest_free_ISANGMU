@@ -1,36 +1,33 @@
 # SO-ARM101 STL 파일
 
-본 폴더에는 SO-ARM101 6DOF 로봇 암 프레임 STL 파일을 배치한다. **STL 자체는 git 추적에서 제외**(`.gitignore` `*.stl`)되며, 각자 아래 절차로 다운로드한다.
+본 폴더에는 SO-ARM101 6DOF 로봇 암 프레임 STL 파일이 포함되어 있다.
 
-## 다운로드 (수동)
+## 포함된 파일
 
-1. Hugging Face LeRobot 저장소 접속: https://github.com/huggingface/lerobot
-2. SO-ARM 관련 디렉토리에서 STL 파일 확보 (저장소 구조는 변경될 수 있으므로 최신 docs 참고)
-3. 본 디렉토리(`hardware/stl/`)에 배치
-
-## 필요 파트 (예시)
-
-| 파일명 | 용도 | 출력 옵션 |
+| 파일명 | 크기 | 용도 |
 |---|---|---|
-| `base.stl` | 베이스 (섀시 마운팅) | PLA, 인필 30%, 0.2mm 레이어 |
-| `shoulder.stl` | 1축 회전 (어깨) | PLA, 인필 25% |
-| `upper_arm.stl` | 2축 (상완) | PLA, 인필 20% |
-| `forearm.stl` | 3축 (전완) | PLA, 인필 20% |
-| `wrist_pitch.stl` | 4축 (손목 피치) | PLA, 인필 25% |
-| `wrist_roll.stl` | 5축 (손목 롤) | PLA, 인필 25% |
-| `gripper_left.stl` | 그리퍼 좌측 | PLA, 인필 30% |
-| `gripper_right.stl` | 그리퍼 우측 | PLA, 인필 30% |
+| `Base_SO101.stl` | 0.47 MB | 베이스 (섀시 마운팅 인터페이스) |
+| `Prusa_Follower_SO101.stl` | 4.83 MB | Prusa 프린터용 통합 모델 (전체 암) |
+| `Ender_Follower_SO101.stl` | 24.82 MB | Ender 프린터용 통합 모델 (전체 암) |
+
+> 출처: [Hugging Face LeRobot SO-ARM101](https://github.com/huggingface/lerobot) 오픈소스 프레임. 사용한 프린터에 맞춰 `Prusa_*` 또는 `Ender_*` 중 하나를 슬라이싱한다.
+
+## 출력 옵션
+
+| 항목 | 값 |
+|---|---|
+| 재료 | PLA |
+| 인필 | 20 ~ 30% |
+| 레이어 두께 | 0.2 mm |
+| 서보 피팅 공차 | 0.1 ~ 0.2 mm (출력 후 줄로 미세 다듬기) |
+| 노즐 | 0.4 mm |
 
 ## 자체 제작 어댑터
 
-LeRobot 원본은 테이블 클램프 고정 설계이므로 **2WD 섀시 마운팅용 베이스 어댑터 플레이트**를 별도 제작한다.
+LeRobot 원본은 테이블 클램프 고정 설계이므로, **2WD 섀시 마운팅용 베이스 어댑터 플레이트**는 별도 제작한다.
 
-- 위치: `hardware/stl/custom/chassis_adapter.stl` (자체 모델링)
-- `.gitignore`에서 `custom/` 하위 STL은 추적 대상으로 예외 처리됨
-
-## 출력 공차
-
-서보 피팅: **0.1 ~ 0.2mm** (출력 후 줄로 미세 다듬기)
+- 위치: `hardware/stl/custom/chassis_adapter.stl` (예정 — 자체 모델링)
+- 섀시 나사 구멍에 맞춰 베이스 파트를 수정하여 출력
 
 ## 라이선스
 

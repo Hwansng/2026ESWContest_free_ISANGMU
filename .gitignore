@@ -70,8 +70,8 @@ rosbag2_*
 *.stl
 *.gcode
 *.3mf
-# 단, 자체 제작 어댑터(custom/)는 추적
-!hardware/stl/custom/*.stl
+# hardware/stl/ 하위는 모두 추적 (LeRobot SO-ARM101 + 자체 제작 어댑터)
+!hardware/stl/**/*.stl
 
 # ===== Office temp =====
 ~$*.docx
