@@ -6,9 +6,9 @@
 
 | 팀원 | 주 담당 | 코드 영역 |
 |---|---|---|
-| **A** | 6DOF 로봇 암 + Vision | `firmware/esp32_arm/`, `ros2_ws/src/hazardbot_arm/`, `ros2_ws/src/hazardbot_vision/` |
-| **B** | AMR + 센서 퓨전 + 전력 | `firmware/esp32_amr/`, `hardware/schematics/` |
-| **C** | RPi 5 통합 + FSM + 대시보드 | `ros2_ws/src/hazardbot_bringup/`, `hazardbot_mission/`, `hazardbot_dashboard/` |
+| **승환** | 6DOF 로봇 암 + Vision | `firmware/esp32_arm/`, `ros2_ws/src/hazardbot_arm/`, `ros2_ws/src/hazardbot_vision/` |
+| **강희** | AMR + 센서 퓨전 + 전력 | `firmware/esp32_amr/`, `hardware/schematics/` |
+| **진우** | RPi 5 통합 + FSM + 대시보드 | `ros2_ws/src/hazardbot_bringup/`, `hazardbot_mission/`, `hazardbot_dashboard/` |
 
 각자 자기 영역에서 단독 개발/테스트하며, 통합은 주말에 세 플랫폼을 연결한다.
 
