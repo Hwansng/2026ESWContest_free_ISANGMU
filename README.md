@@ -71,7 +71,7 @@
    Tools → Board: "ESP32 Dev Module" → Port 선택 → Upload
 
 3. ESP32 #2 (ARM) 펌웨어 업로드:
-   Arduino IDE → firmware/esp32_arm/esp32_arm.ino 열기
+   Arduino IDE → firmware/esp32_arm/arm_firmware/arm_firmware.ino 열기
    Tools → Board: "ESP32 Dev Module" → Port 선택 → Upload
 
 4. RPi 5에서 ROS2 워크스페이스 빌드 및 실행:
@@ -117,7 +117,7 @@
   </details>
 
  ## 📝 ARM Firmware (ESP32 #2) — 컴플라이언스 파지
- 펌웨어: [firmware/esp32_arm/esp32_arm.ino](firmware/esp32_arm/esp32_arm.ino)
+ 펌웨어: [firmware/esp32_arm/arm_firmware/arm_firmware.ino](firmware/esp32_arm/arm_firmware/arm_firmware.ino)
  <br>
 
  `STS3215 6축 데이지 체인 제어 · 실시간 Load 센싱 · 적응형 파지`
@@ -144,7 +144,7 @@
   </details>
 
  ## 📝 Vision Pipeline (RPi 5)
- 위치: `ros2_ws/src/hazardbot_vision/` (예정)
+ 위치: [`ros2_ws/src/vision_node/`](ros2_ws/src/vision_node/)
  <br>
 
  `OpenCV HSV + minAreaRect 방위각 분류 (60fps)`
@@ -169,132 +169,26 @@
 ```
   </details>
 
- ## 📝 Mission FSM (Orchestrator)
- 위치: `ros2_ws/src/hazardbot_mission/` (예정)
- <br>
-
- `IDLE → PATROL → DETECTED → APPROACH → GRIP → TRANSPORT → ISOLATE → REPORT`
-
-  <details>
-  <summary>FSM 전이 조건 (요약)</summary>
-
-```
-① IDLE → PATROL: 시작 버튼 입력 또는 ROS2 서비스 호출.
-
-② PATROL → DETECTED: 센서 퓨전 모듈이 /hazard/detected에 위험 등급 L1+를 퍼블리시.
-
-③ DETECTED → CLASSIFY: vision_node가 색상/방위각을 결정. 동시에 hazard_detector가 가스 유형(MQ 비율) + 온도(MLX) + 구역 컨텍스트로 위험 등급 L1/L2/L3을 최종 확정.
-
-④ CLASSIFY → APPROACH: AMR이 위험물 정면 위치로 근접 전진. 동시에 ARM의 손목 서보를 사전 정렬(WRIST 회전) → AMR 정지 후 6축 동기 IK 실행.
-
-⑤ APPROACH → GRIP: 컴플라이언스 토크 제어로 그리퍼 폐쇄. Load 한계 초과 시 RETRY ×3.
-
-⑥ GRIP 실패 → SKIP → PATROL (다음 위험물로).
-
-⑦ GRIP 성공 → TRANSPORT: 색상별 격리함 위치로 이동.
-
-⑧ TRANSPORT → ISOLATE: 격리함 위에서 토크 완화 + 그리퍼 개방으로 안전 배치.
-
-⑨ ISOLATE → PATROL (계속) 또는 REPORT (모든 구역 완료 시).
-
-⑩ Fault Isolation: 화염 감지 / LiPo 저전압 / 통신 단절 / 서보 과열 시 RPi 5가 양쪽 ESP32에 동시 STOP 명령을 발송한다.
-```
-  </details>
-
- ## 📝 Sensor Fusion (Hazard Detector)
- 위치: `ros2_ws/src/hazardbot_mission/hazard_detector.py` (예정)
- <br>
-
- `MQ-2/MQ-135 비율 분석 가스 유형 추정 · 3단계 파이프라인 · 구역 컨텍스트`
-
-  <details>
-  <summary>알고리즘 설명 (요약)</summary>
-
-```
-① ESP32 #1에서 /amr/gas 토픽으로 들어오는 MQ-2(가연성 가스 민감) / MQ-135(공기질·NH3·CO2 민감) 값을 동시에 수신한다.
-
-② 두 센서의 반응 비율(MQ2/MQ135)을 계산해 가스 유형을 추정한다:
-   - 비율 > 1.5  → 가연성(LPG/메탄/수소 계열)
-   - 비율 ≈ 1.0  → 일반 공기 오염 / 복합
-   - 비율 < 0.7  → CO2 / NH3 / 알코올 계열
-
-③ 3단계 파이프라인:
-   - Stage 1: 임계값 통과 (각 센서 단독)
-   - Stage 2: 비율 분석으로 유형 분류
-   - Stage 3: 구역 컨텍스트 적용 (현재 ZONE 1/2/3에서 예상되는 위험물 유형과 매칭)
-
-④ 위험 등급:
-   - L1 (주의): 단일 센서 임계값 통과
-   - L2 (위험): 가스 + 고온 또는 가스 + 화염 복합
-   - L3 (긴급): 화염 감지 즉시 → 양쪽 ESP32 STOP
-
-⑤ 결과를 /hazard/detected 토픽으로 퍼블리시: {level, type, zone, value}.
-```
-  </details>
-
  ---
  # ➕ 폴더 구조
 
 ```
 HazardBot-2026/
-├── firmware/
-│   ├── esp32_amr/        # ESP32 #1 펌웨어 (AMR · 센서 · 라인트레이싱)
-│   └── esp32_arm/        # ESP32 #2 펌웨어 (STS3215 6DOF 제어)
-├── ros2_ws/
-│   └── src/              # ROS2 Jazzy 패키지 (RPi 5)
-│       ├── hazardbot_bringup/
-│       ├── hazardbot_arm/
-│       ├── hazardbot_vision/
-│       ├── hazardbot_mission/
-│       └── hazardbot_dashboard/
-├── hardware/
-│   ├── stl/              # SO-ARM101 프레임 + 섀시 어댑터 STL
-│   └── schematics/       # 회로도, 핀맵
+├── .github/workflows/    # CI (Arduino 컴파일 · ROS2 colcon build)
 ├── docs/
 │   ├── architecture.md   # 시스템 아키텍처 다이어그램
 │   └── contributing.md   # 협업 가이드 (브랜치 전략 · PR 프로세스)
-├── .github/workflows/    # CI (Arduino 컴파일 · ROS2 colcon build)
+├── firmware/
+│   ├── esp32_amr/        # ESP32 #1 펌웨어 (AMR · 센서 · 라인트레이싱)
+│   └── esp32_arm/
+│       └── arm_firmware/ # ESP32 #2 펌웨어 (STS3215 6DOF 제어)
+├── hardware/
+│   └── stl/              # SO-ARM101 프레임 STL
+├── ros2_ws/
+│   └── src/
+│       └── vision_node/  # ROS2 비전 패키지 (RPi 5)
 └── README.md
 ```
-
- ---
- # ➕ 추후 활용방안
-
- - 산업 현장 위험물 격리에 활용
- ```
- 화학 공장 · 정유 시설 등 가스 누출 위험이 상존하는 환경에서 인력 투입 없이 자율 순찰과 1차 격리를 수행할 수 있다.
-
- 컴플라이언스 토크 제어로 미지의 재질(유리병, 플라스틱, 금속)도 안전하게 파지할 수 있어 사고 확산을 차단한다.
- ```
-
- - 재난 현장 정찰 및 위험물 분리에 활용 가능
- ```
- 화재 · 가스 누출 등 재난 현장에서 인명 피해를 막기 위해 진입 전 1차 정찰 및 위험물 격리에 투입할 수 있다.
-
- 5종 센서 퓨전으로 가스 유형 · 온도 · 화염 여부를 동시 판단하여 구조대원에게 사전 정보를 제공한다.
- ```
-
- - 의료 폐기물 자동 분류에 활용 가능
- ```
- 병원 · 연구소의 의료 폐기물(주사기 · 시약병 등)은 종류별로 격리해야 한다.
-
- 색상 + 방위각 인식 기반 6DOF 적응형 파지로 다양한 형상의 폐기물을 안전하게 분류함에 배치할 수 있다.
- ```
-
- ---
- # ➕ 팀 / 일정
-
- | 팀원 | 담당 영역 |
- | --- | --- |
- | 박승환 (A) | 6DOF 로봇 암 + 비전 ESP32 #2 전담 (`firmware/esp32_arm/`, `ros2_ws/src/hazardbot_arm/`, `ros2_ws/src/hazardbot_vision/`) |
- | 윤강희 (B) | AMR + 센서 퓨전 + 전력 ESP32 #1 전담 (`firmware/esp32_amr/`, `hardware/`) |
- | 이진우 (C) | RPi 5 통합 레이어 전체 미션 조율 (`ros2_ws/src/hazardbot_bringup/`, `hazardbot_mission/`, `hazardbot_dashboard/`) |
-
- | 구간 | 기간 | 비고 |
- | --- | --- | --- |
- | 사전 준비기 | 2026-04-01 ~ 2026-06-말 | 학습 + 부품 확보 + 단위 개발 + 1차 통합 |
- | 집중 개발기 | 2026-07-01 ~ 2026-08-15 | 차별화 기능 + 안정화 |
- | 마무리기 | 2026-08-16 ~ 2026-09-초 | 문서화 + 발표 준비 |
 
  ---
  # ➕ 협업 / 라이선스
@@ -304,5 +198,3 @@ HazardBot-2026/
  - 본 저장소는 **비공개(Private)** 이며 경진대회 출품 전까지 외부 공개를 금지한다.
  - Hugging Face LeRobot SO-ARM101 STL은 [원 저장소](https://github.com/huggingface/lerobot) 라이선스를 따른다.
 
- ---
- 이 후에도 다양한 개발 아이디어를 적용하여 작품을 발전시킬 계획입니다. 감사합니다 😄
