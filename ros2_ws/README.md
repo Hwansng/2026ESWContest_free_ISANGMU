@@ -1,7 +1,5 @@
 # ROS2 워크스페이스 (Raspberry Pi 5)
 
-담당: 팀원 C
-
 ROS2 Jazzy (Ubuntu 24.04 LTS) 기반 미션 통합 레이어.
 
 ## 패키지 구성 (예정)
