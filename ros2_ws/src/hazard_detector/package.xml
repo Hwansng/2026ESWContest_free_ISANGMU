@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>hazard_detector</name>
+  <version>0.0.1</version>
+  <description>Hazard Detector Node</description>
+  <maintainer email="jinu@hazardbot.local">jinu</maintainer>
+  <license>MIT</license>
+  <depend>rclpy</depend>
+  <depend>std_msgs</depend>
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>
