@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>mission_orchestrator</name>
+  <version>0.0.1</version>
+  <description>Mission Orchestrator FSM Node</description>
+  <maintainer email="jinu@hazardbot.local">jinu</maintainer>
+  <license>MIT</license>
+  <depend>rclpy</depend>
+  <depend>std_msgs</depend>
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>
