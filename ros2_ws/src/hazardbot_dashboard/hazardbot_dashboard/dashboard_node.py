@@ -1,12 +1,15 @@
 """
-ROS2 토픽 데이터를 Flask + SocketIO로 웹 대시보드에 실시간 표출하는 노드.
+camera_ros 토픽을 구독해 실시간 카메라 스트리밍(/video)을 추가한 대시보드 노드.
 """
 import rclpy
 from rclpy.node import Node
 from std_msgs.msg import String, Float32
-import json, threading, subprocess, os
+from sensor_msgs.msg import Image
+from cv_bridge import CvBridge
+import json, threading, subprocess, os, time, cv2
+
 from ament_index_python.packages import get_package_share_directory
-from flask import Flask, render_template
+from flask import Flask, render_template, Response
 from flask_socketio import SocketIO
 
 pkg_share = get_package_share_directory('hazardbot_dashboard')
@@ -24,10 +27,17 @@ dashboard_data = {
     'rpi_health': {'cpu_temp': 0.0, 'throttled': '0x0'},
 }
 
+dashboard_node_ref = None
+
 class DashboardNode(Node):
     # 노드 초기화: 토픽 구독/발행 설정
     def __init__(self):
         super().__init__('hazardbot_dashboard')
+        self.bridge = CvBridge()
+        self.latest_frame = None
+        self.frame_lock = threading.Lock()
+
+        self.create_subscription(Image, '/camera/image_raw', self.image_cb, 10)
         self.create_subscription(String, '/mission/state', self.mission_cb, 10)
         self.create_subscription(String, '/amr/sensors',   self.sensor_cb, 10)
         self.create_subscription(String, '/amr/gas',       self.gas_cb, 10)
@@ -59,6 +69,15 @@ class DashboardNode(Node):
     # /vision/detected 콜백: 감지 색상/방위각 로그 또는 상태 갱신
     def vision_cb(self, msg): dashboard_data['vision'] = json.loads(msg.data)
 
+    # /camera/image_raw 콜백: ROS Image를 OpenCV 배열로 변환해 저장
+    def image_cb(self, msg):
+        try:
+            frame = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
+            with self.frame_lock:
+                self.latest_frame = frame
+        except Exception as e:
+            self.get_logger().warn(f'이미지 변환 실패: {e}')
+
     # vcgencmd로 RPi5 CPU 온도/스로틀링 상태 조회
     def check_rpi_health(self):
         try:
@@ -74,6 +93,26 @@ class DashboardNode(Node):
         socketio.emit('update', dashboard_data)
 
 
+# 최신 카메라 프레임을 MJPEG 스트림으로 인코딩
+def generate_frames():
+    while True:
+        frame = None
+        if dashboard_node_ref is not None:
+            with dashboard_node_ref.frame_lock:
+                if dashboard_node_ref.latest_frame is not None:
+                    frame = dashboard_node_ref.latest_frame.copy()
+        if frame is None:
+            time.sleep(0.1)
+            continue
+        _, buffer = cv2.imencode('.jpg', frame)
+        yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
+
+
+@app.route('/video')
+# /video 라우트: 카메라 스트림 응답 반환
+def video():
+    return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
+
 @app.route('/')
 # / 라우트: 대시보드 메인 페이지 렌더링
 def index():
@@ -82,8 +121,10 @@ def index():
 
 # 노드 초기화 후 스핀 시작, 종료 시 안전하게 정리
 def main(args=None):
+    global dashboard_node_ref
     rclpy.init(args=args)
     node = DashboardNode()
+    dashboard_node_ref = node
     flask_thread = threading.Thread(
         target=lambda: socketio.run(app, host='0.0.0.0', port=8080, debug=False, allow_unsafe_werkzeug=True),
         daemon=True)
@@ -94,4 +135,5 @@ def main(args=None):
         pass
     finally:
         node.destroy_node()
-        rclpy.shutdown()
+        if rclpy.ok():
+            rclpy.shutdown()
