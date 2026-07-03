@@ -18,6 +18,7 @@ class ArmBridge(Node):
         self.create_subscription(String, '/arm/command',    self.arm_cmd_cb,  10)
         self.create_subscription(String, '/arm/led_cmd',    self.led_cb,      10)
         self.create_subscription(String, '/arm/buzzer_cmd', self.buzzer_cb,   10)
+        self.create_subscription(String, '/arm/grip_cmd',   self.grip_cb,     10)
 
         self.conn = None
         self.conn_lock = threading.Lock()
@@ -137,3 +138,11 @@ def main(args=None):
     finally:
         node.destroy_node()
         rclpy.shutdown()
+
+    # /arm/grip_cmd 콜백: 파지 방향/임계값을 GRIP 명령으로 전송
+    def grip_cb(self, msg: String):
+        parts = msg.data.strip().split(',')
+        if len(parts) >= 2:
+            direction, threshold = parts[0], parts[1]
+            self.build_and_send('GRIP', direction, threshold)
+            self.get_logger().info(f'GRIP 명령 전송: {direction} 임계값={threshold}%')
