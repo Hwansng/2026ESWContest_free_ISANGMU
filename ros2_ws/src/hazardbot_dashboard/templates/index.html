@@ -6,18 +6,57 @@
 <style>
 body{background:#0a0a0a;color:#e0e0e0;font-family:monospace;padding:16px}
 h1{text-align:center;color:#00ff88}
-.card{background:#1a1a1a;border:1px solid #333;border-radius:8px;padding:16px;margin:8px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.card{background:#1a1a1a;border:1px solid #333;border-radius:8px;padding:16px}
+table{width:100%;border-collapse:collapse;font-size:13px}
 </style>
 </head>
 <body>
-<h1>HAZARDBOT DASHBOARD</h1>
-<div class="card">MISSION STATE: <span id="mission-state">IDLE</span></div>
-<div class="card">HAZARD LEVEL: <span id="hazard-level">L0</span></div>
+<h1>⚠ HAZARDBOT DASHBOARD</h1>
+<div class="grid">
+  <div class="card">
+    <h3>MISSION STATE</h3>
+    <div id="mission-state">IDLE</div>
+    <div>구역: <span id="zone-display">일반구역</span></div>
+  </div>
+  <div class="card">
+    <h3>구역별 판정 — 같은 값, 다른 판정</h3>
+    <table>
+      <tr><th>구역</th><th>가스 원시값</th><th>임계값</th><th>판정</th></tr>
+      <tr id="zone-row-1"><td>일반구역</td><td id="zone1-gas">-</td><td>300↑=격리실패</td><td id="zone1-verdict">-</td></tr>
+      <tr id="zone-row-2"><td>취급구역</td><td id="zone2-gas">-</td><td>500↑=주의</td><td id="zone2-verdict">-</td></tr>
+      <tr id="zone-row-3"><td>위험구역</td><td id="zone3-gas">-</td><td>정상범위(무시)</td><td id="zone3-verdict">-</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h3>ENV BOARD (sensor_bridge)</h3>
+    <div>가스: <span id="env-gas">0</span></div>
+    <div>화염: <span id="env-flame">없음</span></div>
+    <div>상태: <span id="env-state">-</span></div>
+  </div>
+</div>
 <script>
 const socket = io();
 socket.on('update', (data) => {
     document.getElementById('mission-state').textContent = data.mission_state;
-    document.getElementById('hazard-level').textContent = 'L' + (data.hazard.level || 0);
+    document.getElementById('zone-display').textContent = data.zone_display || '알수없음';
+
+    const envGas = (data.env_gas && data.env_gas.gas) || 0;
+    document.getElementById('env-gas').textContent = envGas;
+    document.getElementById('env-flame').textContent = (data.env_temp && data.env_temp.flame) ? '🔥 감지!' : '없음';
+    document.getElementById('env-state').textContent = (data.env_state && data.env_state.state) || '-';
+
+    const th = data.zone_thresholds || {};
+    document.getElementById('zone1-gas').textContent = envGas;
+    document.getElementById('zone2-gas').textContent = envGas;
+    document.getElementById('zone3-gas').textContent = envGas;
+    const t1 = (th[1] && th[1].gas_alert) || 300;
+    const t2 = (th[2] && th[2].gas_alert) || 500;
+    const v1 = document.getElementById('zone1-verdict');
+    v1.textContent = envGas >= t1 ? '🔴 격리 실패' : '🟢 정상';
+    const v2 = document.getElementById('zone2-verdict');
+    v2.textContent = envGas >= t2 ? '🟡 주의' : '🟢 정상';
+    document.getElementById('zone3-verdict').textContent = '🟢 정상 범위 (설계상 무시)';
 });
 </script>
 </body>
