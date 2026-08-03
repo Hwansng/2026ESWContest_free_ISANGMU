@@ -1,5 +1,5 @@
 """
-ACT 아키텍처에 맞춰 파지(GRIP)/놓기(TRANSPORT) 요청을 분리하고, 물체 분류·구역 표시 이름을 반영한 FSM 조율 노드.
+버그 수정판 FSM 조율 노드: GRIP 재시도 발행 누락, 배터리 타입 불일치, TRANSPORT 목적지 매핑 누락 등을 수정.
 """
 import rclpy
 from rclpy.node import Node
@@ -81,6 +81,12 @@ class MissionOrchestrator(Node):
             grip_msg = String(); grip_msg.data = self.detected_color or 'red'
             self.pub_grip_request.publish(grip_msg)
             self.get_logger().info(f'GRIP 요청 전송: color={grip_msg.data}')
+        elif new_state == MissionState.TRANSPORT:
+            object_class = COLOR_TO_CLASS_MISSION.get(self.detected_color)
+            destination = DESTINATION_BY_CLASS.get(object_class, 'HOME')
+            place_msg = String(); place_msg.data = destination
+            self.pub_place_request.publish(place_msg)
+            self.get_logger().info(f'놓기 요청 전송: destination={destination}')
         elif new_state == MissionState.EMERGENCY:
             self.set_led('2'); self.set_buzzer('1')
             self.emergency_stop_all()
@@ -111,10 +117,14 @@ class MissionOrchestrator(Node):
     # /arm/servo_feedback 콜백: 과열/과부하 경고 또는 파지 판정
     def feedback_cb(self, msg: String):
         data = json.loads(msg.data)
-        if data.get('id') != 6 or self.state != MissionState.GRIP:
-            return
-        threshold = 40 if self.detected_color == 'yellow' else 80
+        servo_id = data.get('id')
         load = data.get('load', 0)
+        if servo_id != 6 or self.state != MissionState.GRIP:
+            return
+
+        object_class = COLOR_TO_CLASS_MISSION.get(self.detected_color)
+        threshold = GRIP_THRESHOLD_BY_CLASS.get(object_class, 80)
+
         if load >= threshold:
             self.get_logger().info(f'파지 성공! Load={load}%')
             self.grip_retry = 0
@@ -123,19 +133,18 @@ class MissionOrchestrator(Node):
             self.grip_retry += 1
             if self.grip_retry <= self.MAX_RETRY:
                 self.get_logger().warn(f'파지 실패, 재시도 {self.grip_retry}/{self.MAX_RETRY}')
-                # NOTE: 이 시점 코드는 pub_grip_retry 발행 누락 버그 있었음 (M9에서 수정)
+                retry_msg = String(); retry_msg.data = json.dumps({'offset_mm': 5})
+                self.pub_grip_retry.publish(retry_msg)
             else:
+                self.get_logger().error('파지 재시도 초과 - SKIP')
                 self.grip_retry = 0
                 self.transition(MissionState.PATROL)
 
     # /amr/battery 콜백: 저전압 감지 시 EMERGENCY 전이
-    def battery_cb(self, msg):
-        # NOTE: 이 시점 코드는 String 타입으로 잘못 구독 (M9에서 Float32로 수정)
-        try:
-            voltage = float(msg.data)
-        except:
-            voltage = 0.0
+    def battery_cb(self, msg: Float32):
+        voltage = msg.data
         if 0 < voltage < 9.9:
+            self.get_logger().error(f'배터리 부족! {voltage}V → 비상 정지')
             self.transition(MissionState.EMERGENCY)
 
     # 양쪽 ESP32 비상 정지 처리 (또는 하트비트 중단)
@@ -154,6 +163,7 @@ class MissionOrchestrator(Node):
             'color': self.detected_color, 'angle': self.detected_angle,
         })
         self.pub_state.publish(msg)
+        self.pub_zone.publish(Int8(data=self.current_zone))
 
     # /arm/led_cmd로 LED 색상 값 발행
     def set_led(self, value: str):
