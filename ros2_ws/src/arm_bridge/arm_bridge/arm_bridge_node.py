@@ -6,20 +6,22 @@ from rclpy.node import Node
 from std_msgs.msg import String
 import socket, threading, json, time
 
-ARM_PORT = 5001
+ARM_PORT = 5001   # ESP32 #2가 접속할 포트
 
 class ArmBridge(Node):
-    # 노드 초기화: 토픽 구독/발행 설정
     def __init__(self):
         super().__init__('arm_bridge')
 
-        self.pub_feedback = self.create_publisher(String, '/arm/servo_feedback', 10)
+        # Publisher: ESP32 #2 서보 피드백 → ROS2
+        self.pub_feedback = self.create_publisher(
+            String, '/arm/servo_feedback', 10
+        )
 
+        # Subscribers: ROS2 명령 → ESP32 #2
         self.create_subscription(String, '/arm/command',    self.arm_cmd_cb,  10)
         self.create_subscription(String, '/arm/led_cmd',    self.led_cb,      10)
         self.create_subscription(String, '/arm/buzzer_cmd', self.buzzer_cb,   10)
         self.create_subscription(String, '/arm/grip_cmd',   self.grip_cb,     10)
-
         self.conn = None
         self.conn_lock = threading.Lock()
 
@@ -27,7 +29,6 @@ class ArmBridge(Node):
         self.create_timer(0.5, self.heartbeat)
         self.get_logger().info('ARM Bridge 노드 시작!')
 
-    # TCP 서버 소켓을 열고 클라이언트(ESP32) 접속을 계속 대기
     def tcp_server(self):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
             server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -40,12 +41,13 @@ class ArmBridge(Node):
                     self.get_logger().info(f'ESP32 #2 연결됨! IP: {addr[0]}')
                     with self.conn_lock:
                         self.conn = conn
-                    threading.Thread(target=self.recv_loop, args=(conn,), daemon=True).start()
+                    threading.Thread(
+                        target=self.recv_loop, args=(conn,), daemon=True
+                    ).start()
                 except Exception as e:
                     self.get_logger().error(f'서버 오류: {e}')
                     time.sleep(1)
 
-    # 연결된 소켓에서 개행 단위로 메시지를 읽어 파싱으로 넘김
     def recv_loop(self, conn):
         buf = ''
         while rclpy.ok():
@@ -64,20 +66,27 @@ class ArmBridge(Node):
                 break
         with self.conn_lock:
             self.conn = None
+        self.get_logger().warn('ESP32 #2 연결 종료.')
 
-    # <CMD,...> 형식 메시지를 검증하고 필드별로 파싱해 토픽 발행
     def parse_msg(self, line: str):
         if not (line.startswith('<') and line.endswith('>')):
             return
         parts = line[1:-1].split(',')
         if not self.verify_checksum(parts):
             return
+
         if parts[0] == 'SFBACK' and len(parts) >= 6:
-            data = {'id': int(parts[1]), 'pos': int(parts[2]), 'load': int(parts[3]), 'temp': int(parts[4])}
-            msg = String(); msg.data = json.dumps(data)
+            # <SFBACK,id,pos,load,temp,CS>
+            data = {
+                'id':   int(parts[1]),
+                'pos':  int(parts[2]),
+                'load': int(parts[3]),
+                'temp': int(parts[4])
+            }
+            msg = String()
+            msg.data = json.dumps(data)
             self.pub_feedback.publish(msg)
 
-    # 메시지 끝의 체크섬이 payload와 일치하는지 검증
     def verify_checksum(self, parts):
         try:
             received = int(parts[-1])
@@ -86,11 +95,9 @@ class ArmBridge(Node):
         except:
             return False
 
-    # 필드들을 합쳐 체크섬(ASCII 합 % 256) 계산
     def calc_checksum(self, *fields):
         return sum(ord(c) for c in ','.join(str(f) for f in fields)) % 256
 
-    # 체크섬을 붙여 <CMD,...> 형식으로 조립 후 소켓 전송
     def build_and_send(self, *fields):
         cs = self.calc_checksum(*fields)
         msg = '<' + ','.join(str(f) for f in fields) + f',{cs}>\n'
@@ -103,31 +110,37 @@ class ArmBridge(Node):
             else:
                 self.get_logger().warn('ESP32 #2 미연결')
 
-    # /arm/command 콜백: 6축 각도 문자열을 ARM 명령으로 전송
     def arm_cmd_cb(self, msg: String):
+        # msg.data 예시: "90,45,120,80,135,30"
         angles = msg.data.strip().split(',')
         self.build_and_send('ARM', *angles)
 
-    # /arm/led_cmd 콜백: LED 색상 명령 전송
     def led_cb(self, msg: String):
+        # msg.data 예시: "2" (0=초록 1=주황 2=빨강 3=흰색)
         self.build_and_send('LED', msg.data.strip())
 
-    # /arm/buzzer_cmd 콜백: 부저 명령 전송
+    def grip_cb(self, msg: String):
+        # msg.data 예시: "CLOSE,80" 또는 "OPEN,0"
+        parts = msg.data.strip().split(',')
+        if len(parts) >= 2:
+            direction, threshold = parts[0], parts[1]
+            self.build_and_send('GRIP', direction, threshold)
+            self.get_logger().info(f'GRIP 명령 전송: {direction} 임계값={threshold}%')
+
     def buzzer_cb(self, msg: String):
+        # msg.data 예시: "1" (1=경보 0=정지)
         self.build_and_send('BUZZ', msg.data.strip())
 
-    # STOP 명령 전송 (비상 정지)
     def emergency_stop(self):
+        self.get_logger().error('!!! ARM 비상 정지 !!!')
         self.build_and_send('STOP')
 
-    # 연결 상태를 주기적으로 디버그 로그로 출력
     def heartbeat(self):
         with self.conn_lock:
             status = '연결됨' if self.conn else '미연결'
         self.get_logger().debug(f'ESP32 #2 상태: {status}')
 
 
-# 노드 초기화 후 스핀 시작, 종료 시 안전하게 정리
 def main(args=None):
     rclpy.init(args=args)
     node = ArmBridge()
@@ -138,11 +151,3 @@ def main(args=None):
     finally:
         node.destroy_node()
         rclpy.shutdown()
-
-    # /arm/grip_cmd 콜백: 파지 방향/임계값을 GRIP 명령으로 전송
-    def grip_cb(self, msg: String):
-        parts = msg.data.strip().split(',')
-        if len(parts) >= 2:
-            direction, threshold = parts[0], parts[1]
-            self.build_and_send('GRIP', direction, threshold)
-            self.get_logger().info(f'GRIP 명령 전송: {direction} 임계값={threshold}%')
