@@ -1,85 +1,178 @@
-"""HazardBot 비전 노드 (ROS2 Jazzy).
-
-/amr/object_near(Bool) 트리거가 True일 때 카메라 프레임을 캡처하고,
-detector로 위험물을 검출해 /vision/detected(String, <VISION,...,CS>)로 퍼블리시한다.
-PC(웹캠) 단독 개발 후 RPi(picamera2)로 카메라 소스만 교체해 통합한다.
 """
-from __future__ import annotations
-
-import os
-
+형상 특징(원형도·채움률)과 ROI 제한, 색·형상 불일치 시 소프트 폴백을 추가한 비전 노드.
+"""
 import rclpy
-import yaml
-from ament_index_python.packages import get_package_share_directory
 from rclpy.node import Node
-from rclpy.qos import QoSProfile, ReliabilityPolicy
-from std_msgs.msg import Bool, String
+from std_msgs.msg import String, Bool
+from sensor_msgs.msg import Image
+from cv_bridge import CvBridge
+import json
+import cv2
+import numpy as np
+import threading
 
-from vision_node import detector as det
-from vision_node.camera_source import create_camera
-from vision_node.protocol import build_message
+# ══════════════════════════════════════════════
+# 물체 분류 (색상 기반) — arm_act_node와 동일 규칙 공유
+# ══════════════════════════════════════════════
+class ObjectClass:
+    CONTAINMENT_BREACH = "CONTAINMENT_BREACH"
+    HANDLE_CARE = "HANDLE_CARE"
+
+COLOR_TO_CLASS = {
+    'red': ObjectClass.CONTAINMENT_BREACH,
+    'yellow': ObjectClass.HANDLE_CARE,
+}
+
+# 형상 기대값 (실물 조달 후 재조정 필요 — 지금은 임시값)
+EXPECTED_SHAPE = {
+    'red':    {'circularity_min': 0.0, 'circularity_max': 1.0},  # 강체, 형태 안정적
+    'yellow': {'circularity_min': 0.0, 'circularity_max': 1.0},  # 변형체, 폭넓게 허용
+}
 
 
 class VisionNode(Node):
-    def __init__(self) -> None:
-        super().__init__("vision_node")
+    def __init__(self):
+        super().__init__('vision_node')
 
-        # 파라미터: 카메라 소스(webcam/picamera2), HSV 설정 파일 경로
-        self.declare_parameter("camera_source", "webcam")
-        self.declare_parameter("config_path", "")
-        source = self.get_parameter("camera_source").value
-        cfg_path = self.get_parameter("config_path").value or self._default_cfg()
-        self._cfg = self._load_cfg(cfg_path)
+        self.bridge = CvBridge()
+        self.latest_frame = None
+        self.frame_lock = threading.Lock()
 
-        # 카메라 캡처 소스 생성 (소스만 교체하면 PC/RPi 공용)
-        self._camera = create_camera(source)
+        self.create_subscription(Image, '/camera/image_raw', self.image_cb, 10)
+        self.create_subscription(Bool, '/amr/object_near', self.trigger_cb, 10)
 
-        # QoS 명시: 단발성 트리거이므로 신뢰성(RELIABLE) 사용
-        qos = QoSProfile(depth=10, reliability=ReliabilityPolicy.RELIABLE)
-        self._pub = self.create_publisher(String, "/vision/detected", qos)
-        self._sub = self.create_subscription(
-            Bool, "/amr/object_near", self._on_trigger, qos)
+        self.pub_vision = self.create_publisher(String, '/vision/detected', 10)
 
-        self.get_logger().info(f"vision_node 시작 (source={source})")
+        self.hsv_ranges = {
+            'red': [
+                (np.array([0,   120, 70]),  np.array([10,  255, 255])),
+                (np.array([170, 120, 70]),  np.array([180, 255, 255])),
+            ],
+            'yellow': [
+                (np.array([20, 100, 100]), np.array([35, 255, 255])),
+            ],
+        }
 
-    def _default_cfg(self) -> str:
-        """설치된 share 디렉터리의 기본 HSV 설정 경로."""
-        share = get_package_share_directory("vision_node")
-        return os.path.join(share, "config", "hsv_calibration.yaml")
+        # 🔴 프론트 카메라 ROI — 작업공간 높이로 제한 (바닥 오검출 차단)
+        # 값은 실제 카메라 마운트 위치 확정 후 재조정 필요
+        self.roi_y_start_ratio = 0.3  # 화면 상단 30% 지점부터
+        self.roi_y_end_ratio = 0.8    # 화면 상단 80% 지점까지
 
-    def _load_cfg(self, path: str) -> dict:
-        with open(path, "r", encoding="utf-8") as f:
-            return yaml.safe_load(f)
+        self.get_logger().info('Vision Node 시작! (/camera/image_raw 구독 중)')
 
-    def _on_trigger(self, msg: Bool) -> None:
-        """object_near=True일 때만 1회 캡처 -> 검출 -> 퍼블리시."""
-        if not msg.data:
-            return
-        frame = self._camera.read()
-        if frame is None:
-            self.get_logger().warn("프레임 캡처 실패")
-            return
-        detections = det.detect(frame, self._cfg)
-        if not detections:
-            return
-        # 가장 큰(면적 기준) 물체 1건만 전송
-        target = max(detections, key=lambda d: d.width * d.height)
-        wrist = det.angle_to_wrist_roll(target.angle)
-        # 페이로드: color:cx:cy:w:h:angle:asym
-        value = (f"{target.color}:{target.cx}:{target.cy}:"
-                 f"{target.width}:{target.height}:{wrist}:"
-                 f"{int(target.asymmetric)}")
-        out = String()
-        out.data = build_message("VISION", value)  # <VISION,...,CS>
-        self._pub.publish(out)
-        self.get_logger().info(f"검출 발행: {out.data}")
+    def image_cb(self, msg):
+        try:
+            frame = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
+            with self.frame_lock:
+                self.latest_frame = frame
+        except Exception as e:
+            self.get_logger().warn(f'이미지 변환 실패: {e}')
 
-    def destroy_node(self) -> bool:
-        self._camera.release()
-        return super().destroy_node()
+    def trigger_cb(self, msg: Bool):
+        if msg.data:
+            with self.frame_lock:
+                frame = self.latest_frame.copy() if self.latest_frame is not None else None
+            if frame is not None:
+                threading.Thread(
+                    target=self.analyze_frame, args=(frame,), daemon=True
+                ).start()
+
+    def apply_roi(self, frame):
+        """작업공간 높이로 ROI 제한 — 바닥 영역 오검출 차단"""
+        h, w = frame.shape[:2]
+        y1 = int(h * self.roi_y_start_ratio)
+        y2 = int(h * self.roi_y_end_ratio)
+        return frame[y1:y2, :], y1
+
+    def analyze_frame(self, frame):
+        roi_frame, y_offset = self.apply_roi(frame)
+        hsv = cv2.cvtColor(roi_frame, cv2.COLOR_BGR2HSV)
+
+        best_result = None
+        best_area = 0
+
+        for color_name, ranges in self.hsv_ranges.items():
+            mask = np.zeros(hsv.shape[:2], dtype=np.uint8)
+            for (lower, upper) in ranges:
+                mask |= cv2.inRange(hsv, lower, upper)
+
+            kernel = np.ones((5, 5), np.uint8)
+            mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
+            mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
+
+            contours, _ = cv2.findContours(
+                mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
+            )
+            if not contours:
+                continue
+
+            largest = max(contours, key=cv2.contourArea)
+            area = cv2.contourArea(largest)
+            if area < 1000:
+                continue
+
+            if area > best_area:
+                best_area = area
+                rect = cv2.minAreaRect(largest)
+                center = rect[0]
+                size = rect[1]
+                angle = rect[2]
+
+                w_box, h_box = size
+                if w_box < h_box:
+                    angle = angle + 90
+                angle = abs(angle)
+
+                aspect_ratio = round(max(w_box, h_box) / min(w_box, h_box), 2) if min(w_box, h_box) > 0 else 1.0
+
+                # ── 🆕 형상 특징값 (문서 §2-6) ──
+                perimeter = cv2.arcLength(largest, True)
+                fill_ratio = round(area / (w_box * h_box), 2) if (w_box * h_box) > 0 else 0.0
+                circularity = round(
+                    (4 * np.pi * area) / (perimeter ** 2), 2
+                ) if perimeter > 0 else 0.0
+
+                object_class = COLOR_TO_CLASS.get(color_name)
+
+                # ── 🆕 색·형상 불일치 시 소프트 모드 폴백 판정 ──
+                shape_ok = self.check_shape_consistency(color_name, circularity)
+                mode = 'NORMAL' if shape_ok else 'SOFT_FALLBACK'
+
+                best_result = {
+                    'color': color_name,
+                    'object_class': object_class,
+                    'angle': round(angle, 1),
+                    'aspect_ratio': aspect_ratio,
+                    'area': int(area),
+                    'fill_ratio': fill_ratio,
+                    'circularity': circularity,
+                    'mode': mode,
+                    'center_x': round(center[0], 1),
+                    'center_y': round(center[1] + y_offset, 1),  # ROI 오프셋 복원
+                }
+
+        if best_result:
+            msg = String()
+            msg.data = json.dumps(best_result)
+            self.pub_vision.publish(msg)
+            self.get_logger().info(
+                f'감지: {best_result["color"]} ({best_result["object_class"]}) '
+                f'각도={best_result["angle"]}° 원형도={best_result["circularity"]} '
+                f'모드={best_result["mode"]}'
+            )
+        else:
+            self.get_logger().debug('감지된 물체 없음')
+
+    def check_shape_consistency(self, color_name, circularity):
+        """색상 기대 형상과 실측 형상이 크게 어긋나면 소프트 모드로 폴백
+        (임계값은 실물 조달 후 재조정 필요 — 지금은 항상 통과하도록 관대하게 설정)"""
+        expected = EXPECTED_SHAPE.get(color_name)
+        if not expected:
+            return True
+        return expected['circularity_min'] <= circularity <= expected['circularity_max']
 
 
-def main(args=None) -> None:
+def main(args=None):
     rclpy.init(args=args)
     node = VisionNode()
     try:
@@ -88,8 +181,5 @@ def main(args=None) -> None:
         pass
     finally:
         node.destroy_node()
-        rclpy.shutdown()
-
-
-if __name__ == "__main__":
-    main()
+        if rclpy.ok():
+            rclpy.shutdown()
