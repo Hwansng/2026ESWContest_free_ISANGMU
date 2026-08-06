@@ -1,6 +1,6 @@
 from setuptools import setup
 
-package_name = 'vision_node'
+package_name = 'arm_controller'
 
 setup(
     name=package_name,
@@ -10,11 +10,11 @@ setup(
     zip_safe=True,
     maintainer='pi',
     maintainer_email='pi@todo.todo',
-    description='Vision Node OpenCV HSV',
+    description='Arm Controller Node',
     license='MIT',
     entry_points={
         'console_scripts': [
-            'vision_node = vision_node.vision_node:main',
+            'arm_controller_node = arm_controller.arm_controller_node:main',
         ],
     },
 )

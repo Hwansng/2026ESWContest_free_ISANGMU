@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="3">
-  <name>vision_node</name>
+  <name>arm_act_node</name>
   <version>0.0.1</version>
-  <description>Vision Node OpenCV HSV</description>
+  <description>ACT Policy Inference Node</description>
   <maintainer email="jinu@hazardbot.local">jinu</maintainer>
   <license>MIT</license>
   <depend>rclpy</depend>
@@ -13,4 +13,3 @@
     <build_type>ament_python</build_type>
   </export>
 </package>
-<!-- sensor_msgs, cv_bridge dependencies added -->

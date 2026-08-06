@@ -1,6 +1,6 @@
 from setuptools import setup
 
-package_name = 'vision_node'
+package_name = 'arm_bridge'
 
 setup(
     name=package_name,
@@ -10,11 +10,11 @@ setup(
     zip_safe=True,
     maintainer='pi',
     maintainer_email='pi@todo.todo',
-    description='Vision Node OpenCV HSV',
+    description='ARM ESP32 #2 TCP Bridge',
     license='MIT',
     entry_points={
         'console_scripts': [
-            'vision_node = vision_node.vision_node:main',
+            'arm_bridge_node = arm_bridge.arm_bridge_node:main',
         ],
     },
 )
