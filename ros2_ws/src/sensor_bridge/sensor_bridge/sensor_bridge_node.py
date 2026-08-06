@@ -1,26 +1,29 @@
-"""
-ENV 보드와 TCP로 통신하며 가스/화염/배터리/상태 데이터를 ROS2 토픽과 연결하는 브릿지 노드.
-"""
 import rclpy
 from rclpy.node import Node
-from std_msgs.msg import String, Float32
-import socket, threading, json, time
+from std_msgs.msg import String, Bool, Float32
+import socket
+import threading
+import json
+import time
 
 HOST = '0.0.0.0'
-ENV_PORT = 5002
+ENV_PORT = 8765   # ENV 보드 접속 포트
 
-STATE_NAMES  = ['SAFE', 'WARNING', 'DANGER', 'STOP', 'SENSOR_ERROR']
-ACTION_NAMES = ['NORMAL_MOTION', 'LIMITED_MOTION', 'STOP_MOTION']
-FAULT_NAMES  = ['OK', 'ESTOP', 'LIPO', 'SENSOR', 'RPI_TIMEOUT', 'HAZARD']
+STATE_NAMES  = ['안전', '경고', '위험', '정지', '센서 오류']
+ACTION_NAMES = ['정상 동작', '제한 동작', '정지']
+FAULT_NAMES  = ['이상 없음', '비상정지', '배터리 저전압', '센서 오류', '라즈베리파이 통신 끊김', '가스·불꽃·근접 위험']
+
 
 class SensorBridge(Node):
-    # 노드 초기화: 토픽 구독/발행 설정
     def __init__(self):
         super().__init__('sensor_bridge')
-        self.pub_gas     = self.create_publisher(String,  '/env/gas',     10)
-        self.pub_temp    = self.create_publisher(String,  '/env/temp',    10)
-        self.pub_battery = self.create_publisher(Float32, '/env/battery', 10)
-        self.pub_state   = self.create_publisher(String,  '/env/state',   10)
+
+        # ── Publishers: ENV 보드 데이터 → ROS2 토픽 ──
+        self.pub_gas      = self.create_publisher(String,  '/env/gas',      10)
+        self.pub_temp     = self.create_publisher(String,  '/env/temp',     10)
+        self.pub_battery  = self.create_publisher(Float32, '/env/battery',  10)
+        self.pub_state    = self.create_publisher(String,  '/env/state',    10)
+        self.pub_distance = self.create_publisher(String,  '/env/distance', 10)
 
         self.conn = None
         self.conn_lock = threading.Lock()
@@ -29,15 +32,16 @@ class SensorBridge(Node):
         threading.Thread(target=self.tcp_server, daemon=True).start()
         self.create_timer(0.5, self.check_timeout)
         self.create_timer(0.5, self.heartbeat)
+
         self.get_logger().info('Sensor Bridge(ENV) 노드 시작!')
 
-    # TCP 서버 소켓을 열고 클라이언트(ESP32) 접속을 계속 대기
     def tcp_server(self):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
             server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             server.bind((HOST, ENV_PORT))
             server.listen(1)
             self.get_logger().info(f'포트 {ENV_PORT} 에서 ENV 보드 기다리는 중...')
+
             while rclpy.ok():
                 try:
                     conn, addr = server.accept()
@@ -45,12 +49,13 @@ class SensorBridge(Node):
                     with self.conn_lock:
                         self.conn = conn
                         self.last_recv_time = time.time()
-                    threading.Thread(target=self.recv_loop, args=(conn,), daemon=True).start()
+                    threading.Thread(
+                        target=self.recv_loop, args=(conn,), daemon=True
+                    ).start()
                 except Exception as e:
                     self.get_logger().error(f'서버 오류: {e}')
                     time.sleep(1)
 
-    # 연결된 소켓에서 개행 단위로 메시지를 읽어 파싱으로 넘김
     def recv_loop(self, conn):
         buf = ''
         while rclpy.ok():
@@ -71,37 +76,60 @@ class SensorBridge(Node):
             self.conn = None
         self.get_logger().warn('ENV 보드 연결 종료. 재접속 대기 중...')
 
-    # <CMD,...> 형식 메시지를 검증하고 필드별로 파싱해 토픽 발행
+    # 실제 프로토콜: <SENS,MQ135,MQ2,FLAME,BAT,STATE,ACTION,FAULT,DISTANCE,CHECKSUM>
     def parse_msg(self, line: str):
         self.last_recv_time = time.time()
+
         if not (line.startswith('<') and line.endswith('>')):
             return
         parts = line[1:-1].split(',')
         if len(parts) < 2 or not self.verify_checksum(parts):
+            if len(parts) >= 2:
+                self.get_logger().warn(f'체크섬 불일치: {line}')
             return
-        if parts[0] == 'SENS' and len(parts) >= 8:
-            gas, flame, batt_cv = int(parts[1]), int(parts[2]), int(parts[3])
-            state_code, action_code, fault_code = int(parts[4]), int(parts[5]), int(parts[6])
 
-            self.pub_gas.publish(String(data=json.dumps({'gas': gas})))
+        cmd = parts[0]
+        if cmd == 'SENS' and len(parts) == 10:
+            mq135       = int(parts[1])
+            mq2         = int(parts[2])
+            flame       = int(parts[3])
+            batt_cv     = int(parts[4])
+            state_code  = int(parts[5])
+            action_code = int(parts[6])
+            fault_code  = int(parts[7])
+            distance    = int(parts[8])   # -1이면 측정 실패
+
+            self.pub_gas.publish(String(data=json.dumps({
+                'mq135': mq135,
+                'mq2': mq2,
+            })))
             self.pub_temp.publish(String(data=json.dumps({'flame': int(flame)})))
             self.pub_battery.publish(Float32(data=batt_cv / 100.0))
+            self.pub_distance.publish(String(data=json.dumps({
+                'distance_mm': None if distance == -1 else distance,
+            })))
             self.pub_state.publish(String(data=json.dumps({
                 'state': STATE_NAMES[state_code] if state_code < len(STATE_NAMES) else f'UNKNOWN({state_code})',
                 'action': ACTION_NAMES[action_code] if action_code < len(ACTION_NAMES) else f'UNKNOWN({action_code})',
                 'fault': FAULT_NAMES[fault_code] if fault_code < len(FAULT_NAMES) else f'UNKNOWN({fault_code})',
             })))
-            self.get_logger().info(f'ENV SENS 수신: gas={gas} flame={flame} batt={batt_cv/100.0}V')
 
-    # 메시지 끝의 체크섬이 payload와 일치하는지 검증
+            dist_str = '측정실패' if distance == -1 else f'{distance}mm'
+            self.get_logger().info(
+                f'ENV SENS 수신: MQ135={mq135} MQ2={mq2} flame={flame} '
+                f'batt={batt_cv/100.0}V distance={dist_str}'
+            )
+        else:
+            self.get_logger().debug(f'필드 개수 불일치({len(parts)}개) 또는 알 수 없는 CMD: {line}')
+
     def verify_checksum(self, parts):
         try:
             received_cs = int(parts[-1])
-            return sum(ord(c) for c in ','.join(parts[:-1])) % 256 == received_cs
+            data_str = ','.join(parts[:-1])
+            return sum(ord(c) for c in data_str) % 256 == received_cs
         except (ValueError, IndexError):
             return False
 
-    # check_timeout 처리
     def check_timeout(self):
         elapsed = time.time() - self.last_recv_time
         if self.conn and elapsed > 2.0:
@@ -109,14 +137,12 @@ class SensorBridge(Node):
             with self.conn_lock:
                 self.conn = None
 
-    # 연결 상태를 주기적으로 디버그 로그로 출력
     def heartbeat(self):
         with self.conn_lock:
             status = '연결됨' if self.conn else '미연결'
         self.get_logger().debug(f'ENV 보드 상태: {status}')
 
 
-# 노드 초기화 후 스핀 시작, 종료 시 안전하게 정리
 def main(args=None):
     rclpy.init(args=args)
     node = SensorBridge()
