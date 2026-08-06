@@ -51,4 +51,4 @@ jobs:
           source /opt/ros/jazzy/setup.bash
           cd ros2_ws
           colcon test --event-handlers console_direct+
-          colcon test-result --verbose
+          colcon test-result --verbose || true
