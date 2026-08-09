@@ -1,0 +1,1248 @@
+<title>HazardBot 시연 시나리오</title>
+
+<style>
+  /* ─────────── 토큰: 라이트 ─────────── */
+  :root {
+    --ground:      #F6F8F7;
+    --surface:     #FFFFFF;
+    --surface-2:   #EEF2F1;
+    --ink:         #131C1B;
+    --ink-2:       #34433F;
+    --muted:       #5B6968;
+    --line:        #DCE4E1;
+    --line-soft:   #E9EEEC;
+    --accent:      #0D5C55;
+    --accent-soft: #E2EFEC;
+    --red:         #B93227;
+    --red-soft:    #FBEBE8;
+    --amber:       #8F6704;
+    --amber-soft:  #FAF0DA;
+    --flame:       #C8500F;
+    --flame-soft:  #FCEDE3;
+    --ok:          #35705A;
+    --ok-soft:     #E4F0EA;
+    --shadow:      0 1px 2px rgba(19,28,27,.05), 0 8px 24px -16px rgba(19,28,27,.25);
+  }
+
+  /* ─────────── 토큰: 다크 (시스템 설정) ─────────── */
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:      #0E1413;
+      --surface:     #161F1D;
+      --surface-2:   #1D2725;
+      --ink:         #E4EAE8;
+      --ink-2:       #C2CECB;
+      --muted:       #90A09D;
+      --line:        #27332F;
+      --line-soft:   #1F2A27;
+      --accent:      #4CB1A2;
+      --accent-soft: #16302C;
+      --red:         #EC7A6E;
+      --red-soft:    #331B18;
+      --amber:       #D6A538;
+      --amber-soft:  #2E2513;
+      --flame:       #F2854A;
+      --flame-soft:  #331F13;
+      --ok:          #67B792;
+      --ok-soft:     #162A22;
+      --shadow:      0 1px 2px rgba(0,0,0,.4), 0 8px 24px -16px rgba(0,0,0,.8);
+    }
+  }
+
+  /* ─────────── 토큰: 다크 (명시 선택) ─────────── */
+  :root[data-theme="dark"] {
+    --ground:      #0E1413;
+    --surface:     #161F1D;
+    --surface-2:   #1D2725;
+    --ink:         #E4EAE8;
+    --ink-2:       #C2CECB;
+    --muted:       #90A09D;
+    --line:        #27332F;
+    --line-soft:   #1F2A27;
+    --accent:      #4CB1A2;
+    --accent-soft: #16302C;
+    --red:         #EC7A6E;
+    --red-soft:    #331B18;
+    --amber:       #D6A538;
+    --amber-soft:  #2E2513;
+    --flame:       #F2854A;
+    --flame-soft:  #331F13;
+    --ok:          #67B792;
+    --ok-soft:     #162A22;
+    --shadow:      0 1px 2px rgba(0,0,0,.4), 0 8px 24px -16px rgba(0,0,0,.8);
+  }
+
+  /* ─────────── 타이포 ─────────── */
+  :root {
+    --sans: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont,
+            "Apple SD Gothic Neo", "Malgun Gothic", "맑은 고딕", "Noto Sans KR",
+            system-ui, sans-serif;
+    --mono: "Cascadia Mono", "Cascadia Code", ui-monospace, SFMono-Regular,
+            "SF Mono", Consolas, "D2Coding", "Liberation Mono", monospace;
+    --frame: 1060px;
+    --measure: 70ch;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.72;
+    -webkit-font-smoothing: antialiased;
+    word-break: keep-all;
+    /* 🔴 anywhere 금지 — min-content 계산에 포함되어 표 열·플렉스 아이템이
+       한 글자 폭으로 찌그러지고 글자가 세로로 쌓인다. break-word 는 그러지 않는다. */
+    overflow-wrap: break-word;
+  }
+
+  /* ─────────── 레이아웃 ─────────── */
+  .frame {
+    max-width: var(--frame);
+    margin: 0 auto;
+    padding: 0 28px;
+  }
+  .prose { max-width: var(--measure); }
+
+  main {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding-bottom: 96px;
+  }
+
+  section {
+    padding: 52px 0 8px;
+    border-top: 1px solid var(--line);
+  }
+  section:first-of-type { border-top: none; }
+
+  .stack   { display: flex; flex-direction: column; gap: 18px; }
+  .stack-s { display: flex; flex-direction: column; gap: 10px; }
+  .stack-l { display: flex; flex-direction: column; gap: 30px; }
+
+  /* ─────────── 상단 바 ─────────── */
+  .topbar {
+    position: sticky; top: 0; z-index: 20;
+    background: var(--ground);
+    background: color-mix(in srgb, var(--ground) 88%, transparent);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+  }
+  .topbar-inner {
+    display: flex; align-items: center; gap: 22px;
+    height: 46px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .topbar-inner::-webkit-scrollbar { display: none; }
+  .topbar a {
+    flex: none;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-decoration: none;
+    padding: 4px 0;
+    border-bottom: 1.5px solid transparent;
+    transition: color .15s, border-color .15s;
+  }
+  .topbar a:hover, .topbar a:focus-visible {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+  .topbar .mark {
+    flex: none;
+    font-weight: 800;
+    font-size: 13.5px;
+    letter-spacing: -.01em;
+    margin-right: 4px;
+  }
+
+  /* ─────────── 헤더 ─────────── */
+  header.hero { padding: 64px 0 44px; }
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 14px;
+  }
+  h1 {
+    font-size: clamp(34px, 5.2vw, 46px);
+    line-height: 1.16;
+    font-weight: 800;
+    letter-spacing: -.028em;
+    margin: 0 0 16px;
+    text-wrap: balance;
+  }
+  .lede {
+    font-size: 18px;
+    line-height: 1.65;
+    color: var(--ink-2);
+    margin: 0;
+    max-width: 60ch;
+  }
+  .meta {
+    display: flex; flex-wrap: wrap; gap: 8px 22px;
+    margin-top: 26px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .meta b { color: var(--ink-2); font-weight: 600; }
+
+  /* ─────────── 섹션 머리 ─────────── */
+  .sec-head { margin-bottom: 24px; }
+  .sec-tag {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--accent);
+    display: block;
+    margin-bottom: 9px;
+  }
+  h2 {
+    font-size: 26px;
+    line-height: 1.3;
+    font-weight: 800;
+    letter-spacing: -.022em;
+    margin: 0;
+    text-wrap: balance;
+  }
+  h3 {
+    font-size: 16.5px;
+    font-weight: 700;
+    letter-spacing: -.012em;
+    margin: 0 0 2px;
+  }
+  p { margin: 0; }
+  .prose p + p { margin-top: 12px; }
+  a { color: var(--accent); }
+
+  /* ─────────── 칩 ─────────── */
+  .chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    padding: 2.5px 7px;
+    border-radius: 3px;
+    white-space: nowrap;
+    vertical-align: 2px;
+  }
+  .chip.fix  { background: var(--accent-soft); color: var(--accent); }
+  .chip.risk { background: var(--red-soft);    color: var(--red); }
+  .chip.prop { background: var(--amber-soft);  color: var(--amber); }
+  .chip.todo { background: var(--surface-2);   color: var(--muted); }
+  .chip.ok   { background: var(--ok-soft);     color: var(--ok); }
+
+  .owner {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 1.5px 6px;
+    border-radius: 3px;
+    background: var(--surface-2);
+    color: var(--ink-2);
+    white-space: nowrap;
+  }
+
+  code, .m {
+    font-family: var(--mono);
+    font-size: .88em;
+    background: var(--surface-2);
+    padding: 1px 5px;
+    border-radius: 3px;
+    word-break: break-all;
+  }
+  .num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+  /* ─────────── 표 ─────────── */
+  .tw { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; min-width: 560px; font-size: 14.5px; }
+  th, td { text-align: left; padding: 11px 15px; border-bottom: 1px solid var(--line-soft); vertical-align: top; line-height: 1.6; }
+  thead th {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 600;
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--line);
+    white-space: nowrap;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  td.n { font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  /* 판정표 색 스트라이프 */
+  .judge td:first-child { border-left: 3px solid transparent; font-weight: 600; }
+  .judge tr.r-red   td:first-child { border-left-color: var(--red);   color: var(--red); }
+  .judge tr.r-amb   td:first-child { border-left-color: var(--amber); color: var(--amber); }
+  .judge tr.r-flame td:first-child { border-left-color: var(--flame); color: var(--flame); }
+  .judge tr.r-pass  td:first-child { border-left-color: var(--ok);    color: var(--ok); }
+
+  /* ─────────── 카드 ─────────── */
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(228px, 1fr));
+    gap: 14px;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px 17px;
+    display: flex; flex-direction: column; gap: 7px;
+    box-shadow: var(--shadow);
+  }
+  .card .k {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .card .v { font-size: 15.5px; font-weight: 700; line-height: 1.45; letter-spacing: -.012em; }
+  .card .s { font-size: 13.5px; color: var(--muted); line-height: 1.55; }
+
+  /* ─────────── 경고 블록 ─────────── */
+  .note {
+    border-left: 3px solid var(--accent);
+    background: var(--accent-soft);
+    padding: 14px 18px;
+    border-radius: 0 6px 6px 0;
+    font-size: 14.5px;
+    line-height: 1.65;
+  }
+  .note.warn { border-left-color: var(--red); background: var(--red-soft); }
+  .note strong { font-weight: 700; }
+
+  /* ─────────── 순찰 시퀀스 ─────────── */
+  .seq { display: flex; flex-direction: column; gap: 0; }
+  .step {
+    display: grid;
+    grid-template-columns: 62px minmax(0, 1fr);
+    gap: 18px;
+    padding: 15px 0;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .step:last-child { border-bottom: none; }
+  .step .id {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: .04em;
+    padding-top: 2px;
+    color: var(--accent);
+  }
+  .step .id small { display: block; font-size: 10.5px; font-weight: 500; color: var(--muted); letter-spacing: .06em; margin-top: 2px; }
+  .step .body { display: flex; flex-direction: column; gap: 5px; }
+  .step .act { font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
+  .step .why { font-size: 13.5px; color: var(--muted); line-height: 1.6; }
+  .step.is-red   .id { color: var(--red); }
+  .step.is-amb   .id { color: var(--amber); }
+  .step.is-flame .id { color: var(--flame); }
+  .step.is-pass  .id { color: var(--ok); }
+
+  /* ─────────── 도면 ─────────── */
+  .plan {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 8px;
+    overflow-x: auto;
+    box-shadow: var(--shadow);
+  }
+  .plan svg { display: block; width: 100%; min-width: 620px; height: auto; font-family: var(--sans); }
+  .plan svg text.mono { font-family: var(--mono); }
+  .legend {
+    display: flex; flex-wrap: wrap; gap: 8px 20px;
+    font-family: var(--mono); font-size: 11.5px; color: var(--muted);
+    margin-top: 4px;
+  }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
+  .meta span { min-width: 0; }
+  .swatch { width: 10px; height: 10px; border-radius: 2px; flex: none; }
+
+  /* ─────────── 순서 목록 ─────────── */
+  ol.order { list-style: none; counter-reset: o; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+  ol.order li {
+    counter-increment: o;
+    position: relative;
+    padding: 10px 0 10px 48px;
+    border-bottom: 1px solid var(--line-soft);
+    font-size: 14.5px; line-height: 1.6;
+  }
+  ol.order li:last-child { border-bottom: none; }
+  ol.order li::before {
+    content: counter(o, decimal-leading-zero);
+    position: absolute; left: 0; top: 13px;
+    font-family: var(--mono); font-size: 12px; font-weight: 600;
+    color: var(--muted);
+  }
+  ol.order li.gate { background: var(--red-soft); border-radius: 5px; padding: 10px 12px 10px 48px; border-bottom: none; margin: 4px 0; }
+  ol.order li.gate::before { left: 12px; }
+  ol.order li.gate::before { color: var(--red); }
+  ol.order li.gate b { color: var(--red); }
+
+  /* 🔴 li 에 grid/flex 를 쓰지 않는다 — 컨테이너가 되면 <b> 가 자기 칸을 차지해
+     텍스트가 태그마다 줄바꿈된다. 마커는 절대배치로 걸고 본문은 일반 흐름에 둔다. */
+  ul.plain { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 9px; }
+  ul.plain li { position: relative; padding-left: 26px; font-size: 14.5px; line-height: 1.62; }
+  ul.plain li::before {
+    content: "—"; position: absolute; left: 0; top: 0;
+    color: var(--muted); font-family: var(--mono);
+  }
+  ul.ban li::before { content: "✕"; color: var(--red); font-weight: 700; }
+
+  footer {
+    border-top: 1px solid var(--line);
+    padding: 30px 0 60px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.9;
+  }
+
+  @media (max-width: 640px) {
+    .frame { padding: 0 18px; }
+    section { padding-top: 40px; }
+    .step { grid-template-columns: 52px 1fr; gap: 12px; }
+    h1 { font-size: 30px; }
+    h2 { font-size: 22px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+</style>
+
+<nav class="topbar">
+  <div class="frame topbar-inner">
+    <span class="mark">HazardBot</span>
+    <a href="#judge">판정 규칙</a>
+    <a href="#seq">순찰 시퀀스</a>
+    <a href="#plan">시연장</a>
+    <a href="#act">파지 · ACT</a>
+    <a href="#emg">비상</a>
+    <a href="#work">역할별 작업</a>
+    <a href="#rules">지켜야 할 것</a>
+    <a href="#open">미확정</a>
+    <a href="#docs">문서 지도</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="frame">
+    <p class="eyebrow">확정 시나리오 · 팀 공유본</p>
+    <h1>인화성 물질 취급구역을<br>순찰하고, 직접 조치한다</h1>
+    <p class="lede">
+      24시간 가동되는 산업현장에서 위험을 <b>감지</b>하는 데서 멈추지 않고,
+      격납이 깨진 용기를 <b>직접 격리</b>하고 발화원 앞에서 <b>스스로 물러나는</b> 자율 로봇.
+      아래는 3분 시연 영상의 확정 시나리오와 팀별 작업 항목이다.
+    </p>
+    <div class="meta">
+      <span><b>확정일</b> 2026-08-16</span>
+      <span><b>대상</b> 승환 · 강희 · 진우</span>
+      <span><b>영상</b> 180초 제한</span>
+      <span><b>ACT 게이트</b> 8/21</span>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <!-- ══════════ 한 눈에 ══════════ -->
+  <section id="top">
+    <div class="frame stack">
+      <div class="sec-head">
+        <span class="sec-tag">한 눈에</span>
+        <h2>확정된 것</h2>
+      </div>
+
+      <div class="cards">
+        <div class="card">
+          <span class="k">세계관</span>
+          <span class="v">인화성 물질 취급·보관 구역</span>
+          <span class="s">방폐물 서사는 기각. MQ-2가 잡는 것이 전부 인화성 가스라 센서와 서사가 일치한다.</span>
+        </div>
+        <div class="card">
+          <span class="k">구조</span>
+          <span class="v">취급구역 하나 + 점검점 P1~P4</span>
+          <span class="s">Zone 명칭은 쓰지 않는다. 판정은 점검점을 모른다 — LDAR 제도와 같은 구조.</span>
+        </div>
+        <div class="card">
+          <span class="k">파지</span>
+          <span class="v">적색·황색 둘 다 ACT</span>
+          <span class="s">정책 1개. VGR을 앞단에 직렬로 유지. 파지는 <b>2회</b> — 1회 축소안은 검토 후 기각.</span>
+        </div>
+        <div class="card">
+          <span class="k">엔딩</span>
+          <span class="v">부저 + 후진 이탈 <span class="m">RETURN</span></span>
+          <span class="s">정지가 아니다. 하트비트를 유지한 채 <b>화염에서 물러나</b> 정지한다. 스테이션까지 가지 않는다.</span>
+        </div>
+        <div class="card">
+          <span class="k">시연장</span>
+          <span class="v">점검점마다 ㄷ자 소구획</span>
+          <span class="s">P1·P2·P3에만. <b>P4·스테이션에는 두지 않는다</b> — 구획의 유무가 「보관물 / 이물」을 가른다.</span>
+        </div>
+        <div class="card">
+          <span class="k">출발</span>
+          <span class="v"><span class="m">/mission/start</span> + 점검 7항목</span>
+          <span class="s">부팅 즉시 출발은 폐지. 실패를 촬영 시작 <b>전</b>으로 당긴다.</span>
+        </div>
+      </div>
+
+      <div class="note">
+        <strong>이 시연의 한 문장.</strong> 감지 → 판정 → 조치 → 기록의 폐루프를 로봇 혼자 닫는다.
+        고정 센서·CCTV·순찰 로봇이 「감지」에서 멈추는 자리를 HazardBot이 이어받는다.
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════ 판정 규칙 ══════════ -->
+  <section id="judge">
+    <div class="frame stack">
+      <div class="sec-head">
+        <span class="sec-tag">판정 규칙</span>
+        <h2>로봇이 내리는 판단은 네 가지뿐이다</h2>
+      </div>
+
+      <div class="prose">
+        <p>
+          <b>판정에 점검점 번호가 들어가지 않는다.</b> 점검점 내용이 서로 바뀔 수 있으므로,
+          로봇은 눈앞에 있는 것만 보고 아래 표로 결정한다. 지점 ID는 기록용이다.
+        </p>
+      </div>
+
+      <div class="tw">
+        <table class="judge">
+          <thead>
+            <tr><th>본 것</th><th>가스</th><th>판정</th><th>동작</th><th>근거</th></tr>
+          </thead>
+          <tbody>
+            <tr class="r-pass">
+              <td>적색</td><td class="n">없음</td>
+              <td>정상</td>
+              <td><b>통과</b> — 정지 후 재출발</td>
+              <td>인화성 액체는 <b>증기가 탄다.</b> 격납이 유지되고 있어 <b>조치 대상이 아니다</b> — 위험물이 아닌 것이 아니다</td>
+            </tr>
+            <tr class="r-red">
+              <td>적색</td><td class="n">있음</td>
+              <td><span class="m">CONTAINMENT_BREACH</span></td>
+              <td>파지 → 격리</td>
+              <td><b>격납 파손.</b> 같은 물질인데 <b>상태</b>가 다르다 — 가연성 증기가 공기 중에 있다</td>
+            </tr>
+            <tr class="r-amb">
+              <td>황색</td><td class="n">잴 것이 없다</td>
+              <td><span class="m">HANDLE_CARE</span></td>
+              <td>파지 → 격리</td>
+              <td><b>산화성 고체.</b> 인화성 취급구역에 있는 것 자체가 <b>유별 혼재 제한 위반</b>이고, <b>고체는 가연성 가스를 내지 않는다</b></td>
+            </tr>
+            <tr class="r-flame">
+              <td>화염</td><td class="n">—</td>
+              <td>비상</td>
+              <td>부저 + <b>후진 이탈</b> <span class="m">RETURN</span></td>
+              <td>점화 에너지가 있다. 가연성 증기와 만나면 폭발</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="prose stack-s">
+        <h3>색을 다르게 다루는 것은 자의적 설계가 아니다</h3>
+        <p>
+          <b>NFPA 704</b>에서 적색은 인화성, 황색은 반응성·불안정성이다.
+          <b>UN/DOT 위험물 표지</b>도 적색이 Class 3 인화성 액체·Class 2.1 인화성 가스,
+          황색이 Class 5.1 산화성·Class 7 방사성이다. 우리 판정표는 이 구분을 그대로 따른다.
+        </p>
+      </div>
+
+      <h3>넷 다 위험물이다 — 위반의 종류가 다를 뿐이다</h3>
+      <div class="tw">
+        <table>
+          <thead><tr><th>점검점</th><th>분류</th><th>상태</th><th>위치</th><th>판정</th></tr></thead>
+          <tbody>
+            <tr class="r-pass"><td>P1</td><td>위험물</td><td>정상</td><td>정상</td><td><b>통과</b></td></tr>
+            <tr class="r-red"><td>P2</td><td>위험물</td><td><b>이상</b> — 격납 파손</td><td>정상</td><td>조치</td></tr>
+            <tr class="r-amb"><td>P3</td><td>위험물</td><td>정상</td><td><b>이상</b> — 혼재 위반</td><td>조치</td></tr>
+            <tr class="r-flame"><td>P4</td><td>발화원</td><td>—</td><td><b>통로</b></td><td><b>이탈</b></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="note" style="margin-top:18px">
+        <strong>「P1은 위험물이 아니다」로 말하지 않는다.</strong>
+        IPA는 누출 여부와 관계없이 언제나 위험물이다 — 바뀌는 것은 분류가 아니라 <b>상태</b>다.
+        코드가 이미 정확하다: 상태명이 <span class="m">CONTAINMENT_BREACH</span>, <b>격납 파손</b>이다.<br><br>
+        그리고 이게 <b>「왜 한쪽만 가스를 조회하는가」의 가장 짧은 답</b>이다 —
+        <b>상태를 보려면 재야 하고, 위치는 보는 것으로 끝난다.</b>
+      </div>
+
+      <div class="note">
+        <strong>이 데모의 핵심 장면은 「통과」다.</strong>
+        LDAR·가스누출감지경보기 같은 실제 제도는 모든 용기를 뜯지 않고 임계값으로 정상과 누출을 가른다.
+        현장에서 비싼 것은 위험을 찾는 능력이 아니라 <b>정상을 정상이라고 판단하는 능력</b>이다.
+        적색을 보고 <b>지나치는 장면</b>이 없으면 이 로봇은 컬러 필터와 구분되지 않는다.
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════ 순찰 시퀀스 ══════════ -->
+  <section id="seq">
+    <div class="frame stack">
+      <div class="sec-head">
+        <span class="sec-tag">순찰 시퀀스</span>
+        <h2>P1 → P2 → P3 → P4, 그리고 복귀</h2>
+      </div>
+
+      <div class="seq">
+        <div class="step">
+          <div class="id">IDLE<small>스테이션</small></div>
+          <div class="body">
+            <span class="act">출발 전 점검 7항목 → <span class="m">/mission/start</span></span>
+            <span class="why">
+              DRIVE·ENV 접속 / 배터리 / <b>가스 기준선 안정</b> / 화염 미검출 / 비전 프레임 / ACT 정책 로드.
+              하나라도 실패하면 <b>출발을 거부한다</b>. 3분 촬영 도중 멈추는 것보다 낫다.
+            </span>
+          </div>
+        </div>
+
+        <div class="step is-pass">
+          <div class="id">P1<small>적색 · 향 X</small></div>
+          <div class="body">
+            <span class="act">정지 → 판정 → <b>통과</b> · 재출발 <span class="chip ok">핵심 장면</span></span>
+            <span class="why">
+              적색이지만 가스가 없다. 잠깐 멈췄다 가는 것으로 「봤고, 재고, 통과시켰다」를 동작으로 보여준다.
+              대시보드에 <span class="m">적색 감지 · 가스 정상 · 통과</span>가 문자로 남는다.
+            </span>
+          </div>
+        </div>
+
+        <div class="step is-red">
+          <div class="id">P2<small>적색 · 향 O</small></div>
+          <div class="body">
+            <span class="act">정지 → 가스 확정 → <b>파지</b> → 격리함 투입 → <b>뚜껑 닫기</b></span>
+            <span class="why">
+              <b>색이 같은데 판정이 갈렸다. 색만 보는 시스템이라면 P1도 집었을 것이다.</b>
+              VGR 거친 정렬 → ACT 폐루프 파지 → 서보 부하 <span class="num">80%</span> 도달로 성공 판정.
+              파지 대상은 3D 프린팅 PLA 원기둥.
+              투입 뒤 <b>경첩 뚜껑을 밀어 닫아</b> 봉쇄가 화면에서 완결된다.
+            </span>
+          </div>
+        </div>
+
+        <div class="step is-amb">
+          <div class="id">P3<small>황색</small></div>
+          <div class="body">
+            <span class="act">정지 → 가스 조회 <b>없이</b> 위험 판정 → 파지 → 격리함 투입 → <b>뚜껑 닫기</b></span>
+            <span class="why">
+              <b>산화성 고체</b>를 소분한 <b>개방</b> 용기다 — 고체라 잴 가스가 없다.
+              <b>가스가 없는데 집는다. 가스만 보는 시스템이라면 지나쳤을 것이다.</b>
+              격리함은 셀 안에 있어 <b>위치를 바꾸지 못한다</b> — 로봇이 하는 것은 <b>접촉 차단과 개방 해소</b>이고,
+              <b>구역 밖 반출은 관제에 보고</b>한다.
+              같은 정책이 손목 카메라 픽셀만으로 물체를 구분해 부하 임계를 <span class="num">40%</span>로 낮춰 잡는다.
+              컵 압착은 <b>단단한 컵 + Load 클램프</b>가 막는다 — 소품이 아니라 <b>결정론적 안전층이 실제로 일한다</b>.
+            </span>
+          </div>
+        </div>
+
+        <div class="step is-flame">
+          <div class="id">P4<small>캔들</small></div>
+          <div class="body">
+            <span class="act">화염 감지 → <b>정지</b> → <b>부저 ON</b> → <b>후진 이탈</b> → 정지</span>
+            <span class="why">
+              종전은 「멈추지 않고 그대로 전진 복귀」였다 — 그러면 <b>로봇이 불을 발견하고 불 쪽으로 간다.</b>
+              부저는 위험이라고 말하는데 바퀴는 평소 속도로 화염 옆을 지나간다.
+              이 로봇은 브러시 모터·LiPo를 노출한 구조라 <b>복귀 서사 자체가 「로봇이 점화원 후보」를 전제</b>하는데,
+              전진 통과는 그 전제와 모순이었다.
+            </span>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="id">IDLE<small>이격 지점</small></div>
+          <div class="body">
+            <span class="act">이격 완료 → 부저 유지 → 자동 해제</span>
+            <span class="why">
+              자막은 <b>「점화원 이탈 · 관제 보고」</b>다 — 「안전구역 복귀」라고 쓰지 않는다.
+              도착이 아니라 <b>이격</b>이기 때문이다.
+              반복 촬영은 다음 테이크 전에 손으로 스테이션에 되돌려 놓고, 컷은 이탈 정지에서 끊는다.
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <h3>시간 예산</h3>
+      <div class="tw">
+        <table>
+          <thead><tr><th>항목</th><th>초</th><th>비고</th></tr></thead>
+          <tbody>
+            <tr><td>실속 합계</td><td class="n">159</td><td>후진 이탈로 <b>10초 감소</b> — 복귀 주행 15초 → 후진 5초</td></tr>
+            <tr><td>구간별 배속 절감</td><td class="n">− 52</td><td>주행 3배속 · 준실속 1.5배속. <b>판정·파지는 실속 유지</b></td></tr>
+            <tr><td><b>편집 후 예상</b></td><td class="n"><b>≈ 104</b></td><td><b>여유 76초.</b> 후진 5초를 실속으로 두면 ≈ 107</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="prose">
+        <p>
+          파지 재시도 1회는 약 <span class="num">15초</span>다.
+          <b>배속 편집은 완성도용이 아니라 보험이다.</b> 판정·파지 장면은 실속을 유지하고 주행만 접는다.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════ 시연장 ══════════ -->
+  <section id="plan">
+    <div class="frame stack">
+      <div class="sec-head">
+        <span class="sec-tag">시연장</span>
+        <h2>취급구역 하나, 그 안의 점검점 넷</h2>
+      </div>
+
+      <div class="plan">
+        <svg viewBox="0 0 820 400" role="img" aria-label="시연장 평면도 — 시계 방향 순찰 루프가 P1, P2, P3 세 점검점의 ㄷ자 소구획을 각각 가로지른다. 로봇은 개구부로 들어가 셀 안에서 서고 반대쪽으로 나온다. P4 캔들과 스테이션에는 구획이 없다">
+          <!-- 주행 라인 -->
+          <rect x="196" y="110" width="440" height="230" rx="34"
+                fill="none" stroke="var(--muted)" stroke-width="3.5" stroke-dasharray="9 7"/>
+
+          <!-- 진행 방향 -->
+          <g fill="none" stroke="var(--muted)" stroke-width="2.5" stroke-linecap="round">
+            <path d="M189,232 L196,221 L203,232"/>
+            <path d="M280,110 L306,110 M306,110 L295,104 M306,110 L295,116"/>
+            <path d="M636,180 L636,206 M636,206 L630,195 M636,206 L642,195"/>
+            <path d="M500,340 L474,340 M474,340 L485,334 M474,340 L485,346"/>
+          </g>
+
+          <!-- ══ P2 셀 (적색 향 O) ══ 라인이 관통 -->
+          <g stroke="var(--red)" stroke-width="5" fill="none" stroke-linecap="round">
+            <path d="M176,144 L138,144 L138,212 L176,212"/>
+            <path d="M216,144 L254,144 L254,212 L216,212"/>
+          </g>
+          <circle cx="160" cy="178" r="9" fill="var(--red)"/>
+          <rect x="226" y="170" width="16" height="16" rx="2" fill="none" stroke="var(--red)" stroke-width="2"/>
+          <text class="mono" x="126" y="168" text-anchor="end" font-size="14" font-weight="700" fill="var(--red)">P2</text>
+          <text x="126" y="186" text-anchor="end" font-size="12.5" fill="var(--ink-2)">적색 · 향 있음</text>
+          <text x="126" y="203" text-anchor="end" font-size="12.5" fill="var(--ink-2)">→ 격리</text>
+
+          <!-- ══ P1 셀 (적색 향 X) ══ P2 와 인접 — 같은 제4류 -->
+          <g stroke="var(--ok)" stroke-width="5" fill="none" stroke-linecap="round">
+            <path d="M176,238 L138,238 L138,306 L176,306"/>
+            <path d="M216,238 L254,238 L254,306 L216,306"/>
+          </g>
+          <circle cx="160" cy="272" r="9" fill="var(--ok)"/>
+          <text class="mono" x="126" y="262" text-anchor="end" font-size="14" font-weight="700" fill="var(--ok)">P1</text>
+          <text x="126" y="280" text-anchor="end" font-size="12.5" fill="var(--ink-2)">적색 · 향 없음</text>
+          <text x="126" y="297" text-anchor="end" font-size="12.5" fill="var(--ink-2)">→ 통과</text>
+          <text x="126" y="227" text-anchor="end" font-size="11.5" fill="var(--muted)">인접 셀 · 같은 유별</text>
+
+          <!-- ══ P3 셀 (황색) ══ 라인이 관통 · 적색과 떨어뜨림 -->
+          <g stroke="var(--amber)" stroke-width="5" fill="none" stroke-linecap="round">
+            <path d="M370,90 L370,60 L490,60 L490,90"/>
+            <path d="M370,130 L370,160 L490,160 L490,130"/>
+          </g>
+          <circle cx="400" cy="142" r="9" fill="var(--amber)"/>
+          <rect x="452" y="134" width="16" height="16" rx="2" fill="none" stroke="var(--amber)" stroke-width="2"/>
+          <text class="mono" x="508" y="104" font-size="14" font-weight="700" fill="var(--amber)">P3</text>
+          <text x="508" y="122" font-size="12.5" fill="var(--ink-2)">산화성 고체 → 격리</text>
+          <text x="430" y="44" text-anchor="middle" font-size="11.5" fill="var(--muted)">적색과 이격 · 혼재 제한</text>
+
+          <!-- ══ P4 캔들 ══ 구획 없음 -->
+          <circle cx="636" cy="262" r="9" fill="var(--flame)"/>
+          <text class="mono" x="662" y="258" font-size="14" font-weight="700" fill="var(--flame)">P4</text>
+          <text x="662" y="276" font-size="12.5" fill="var(--ink-2)">캔들 → 부저 · 후진 이탈</text>
+          <text x="662" y="296" font-size="12" font-weight="700" fill="var(--flame)">구획 없음 — 통로</text>
+
+          <!-- 스테이션 -->
+          <rect x="374" y="329" width="84" height="22" rx="4" fill="var(--accent)"/>
+          <text class="mono" x="416" y="345" text-anchor="middle" font-size="12" font-weight="700" fill="var(--surface)">STATION</text>
+          <text x="416" y="372" text-anchor="middle" font-size="12" fill="var(--muted)">구획 없음 · IDLE</text>
+        </svg>
+      </div>
+
+      <div class="legend">
+        <span><i class="swatch" style="background:var(--red)"></i>ㄷ자 소구획 · <b>라인이 가로지른다</b></span>
+        <span><i class="swatch" style="background:var(--muted)"></i>주행 라인 · 시계 방향</span>
+        <span><i class="swatch" style="background:var(--flame)"></i>P4 · 스테이션은 구획 없음</span>
+      </div>
+
+      <div class="prose stack-s">
+        <h3>왜 Zone이라고 부르지 않는가</h3>
+        <p>
+          <b>IEC 60079-10-1에서 Zone은 「그 장소에 반입할 수 있는 방폭 기기 등급」을 정하는 개념이다.</b>
+          로봇이 무엇을 하는지와는 무관하다. Zone 0이 가장 위험하고 <b>Zone 3은 존재하지 않는다</b>.
+        </p>
+        <p>
+          더 큰 문제는 두 번째다 — <b>「Zone 1을 순찰한다」는 곧 「이 로봇은 Zone 1 인증 기기다」라는 주장</b>이 된다.
+          HazardBot은 브러시 모터·LiPo·ESP32를 노출한 구조이고, 복귀 서사 자체가
+          「로봇이 점화원 후보」를 전제한다. 앞뒤가 맞지 않는다.
+        </p>
+        <p>
+          실제 순찰 운용의 단위는 구역이 아니라 <b>태그가 붙은 점검점</b>이다.
+          LDAR은 사업장 하나에 수천 개 지점을 두고 전부 같은 절차로 점검한다.
+          우리 설계는 처음부터 이 구조였고, 어긋나 있던 것은 이름뿐이었다.
+        </p>
+      </div>
+
+      <div class="note">
+        <strong>코드·통신·판정은 손대지 않는다.</strong>
+        <span class="m">ZoneId.ZONE1~3</span>은 물리 위치 식별자로 이미 격리돼 있고,
+        <span class="m">&lt;SENS&gt;</span>에 구역 필드가 원래 없으며, 판정은 원래 구역을 보지 않는다.
+        바뀌는 것은 <b>자막 · 나레이션 · PPT · 대시보드 표기</b>뿐이다.
+      </div>
+
+      <h3>소구획이 점검점의 존재 이유가 된다</h3>
+      <div class="prose stack-s">
+        <p>
+          실제 현장에서 점검점이 특정 위치에 있는 이유는 <b>거기에 구획이 있기 때문</b>이고,
+          구획이 나뉜 이유는 임의가 아니다.
+        </p>
+      </div>
+
+      <div class="tw">
+        <table>
+          <thead><tr><th>근거</th><th>내용</th><th>우리 배치와의 대응</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><b>위험물안전관리법</b><br>유별 혼재·혼합저장 제한</td>
+              <td>유별이 다른 위험물은 원칙적으로 같은 저장소에 둘 수 없고, 예외 조합도 일정 간격 이상 이격이 요구된다</td>
+              <td><b>적색 = 제4류 인화성 액체 / 황색 = 산화성·자기반응성 계열</b> → 애초에 같은 칸에 둘 수 없다. <b>P2와 P3가 분리된 이유가 여기서 나온다</b></td>
+            </tr>
+            <tr>
+              <td><b>화학물질관리법</b><br>보관·저장시설의 방류벽·방지턱</td>
+              <td>누출물이 퍼지지 않게 보관 구역을 낮은 둑으로 두른다</td>
+              <td>ㄷ자 칸막이의 <b>형태 자체가 이것이다</b></td>
+            </tr>
+            <tr>
+              <td><b>LDAR</b><br>EPA Method 21</td>
+              <td>점검 대상은 <b>잠재적 누출원이 있는 물리적 지점</b>이고 거기에 TAG가 붙는다</td>
+              <td>셀 = 누출원이 있는 곳 = <b>TAG가 붙을 자리</b></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="note">
+        <strong>가장 강한 효과는 P4에서, 구획을 두르지 <em>않기</em> 때문에 나온다.</strong><br>
+        구획이 있다 → 보관 지점 → 점검 대상 &nbsp;(P1 · P2 · P3)<br>
+        구획이 없다 → 통로 → 아무것도 없어야 함<br>
+        <b>그런데 통로에 불이 켜져 있다 &nbsp;(P4 🔥)</b><br><br>
+        발화원은 보관물이 아니므로 캔들에는 구획을 두르지 않는다.
+        그러면 <b>구획이 없다는 사실 자체가 P4를 비정상으로 만든다</b> — 다른 셋은 제자리에 있고 이것만 통로에 있다.
+        자막 한 줄 없이 읽힌다. 스테이션도 같은 이유로 구획 없이 둔다.
+      </div>
+
+      <h3>소구획 사양</h3>
+      <div class="tw">
+        <table>
+          <thead><tr><th>항목</th><th>값</th><th>근거</th></tr></thead>
+          <tbody>
+            <tr><td>개수</td><td><b>P1·P2·P3에 각 ㄷ자 2개 = 6개</b><br>P4·스테이션은 없음</td><td>구획 유무가 「보관물 / 이물」을 가른다</td></tr>
+            <tr><td><b>높이</b></td><td><b>물체 높이의 <span class="num">1/3~1/2</span> 수준</b> — 방지턱 정도 · 실측 확정</td><td><b>높으면 팔이 부딪히고 손목 화각을 먹는다.</b> 배경 통제 욕심으로 키우지 말 것</td></tr>
+            <tr><td>개구부</td><td><b>진입면 + 진출면</b> — 라인이 둘을 관통한다</td><td>실제 보관 구획의 접근면은 통로 쪽이다</td></tr>
+            <tr><td><b>개구부 폭</b></td><td><b>차체 <span class="num">260</span> + 산포 <span class="num">±30</span> + 여유 → <span class="num">400</span> 내외</b> · 실측</td><td>기준이 <b>그리퍼에서 차체로</b> 바뀌었다. 대신 <b>「그리퍼가 개구부를 통과하는가」라는 실패 지점이 사라진다</b> — 로봇이 이미 안에 있다</td></tr>
+            <tr><td>셀 내경</td><td>차체 + 팔 동작 여유 + 얕은 링</td><td>로봇이 안에 서서 옆의 물체를 잡는다</td></tr>
+            <tr><td><b>ToF 장착 높이 ↔ 벽 높이</b></td><td><b>둘 다 미확정.</b> 벽을 먼저 정하고 ToF를 맞춘다</td><td>벽 높이는 <b>촬영·팔·화각</b>이 정하고 되돌릴 수 없다. ToF는 높이·임계·<b>ROI</b> 세 손잡이가 있다 — <b>ToF가 벽 높이를 정하게 두지 말 것</b></td></tr>
+            <tr><td><b>색</b></td><td><b>무채색만</b> — 흰색 또는 회색</td><td>적색·황색 계열은 물론 <b>크림·베이지도 금지</b>. 노란 컵과 Hue가 겹친다</td></tr>
+            <tr><td>재질·고정</td><td>가볍게 + 바닥 테이프</td><td>부딪혀도 물체가 튀지 않게</td></tr>
+            <tr><td>P1 ↔ P2</td><td><b>인접한 두 셀</b></td><td>같은 제4류라 인접이 자연스럽다</td></tr>
+            <tr><td>P2 ↔ P3</td><td><b>떨어뜨린다</b></td><td><b>혼재 제한</b> — 이게 서사의 핵심</td></tr>
+            <tr><td><b>표지</b></td><td><b>부착 금지</b></td><td>형태가 설명하게 둔다. 실제 내용물이 없는 모형이다</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="note warn">
+        <strong>소구획은 손목 카메라의 배경이다.</strong>
+        낮고 작아 천장광은 거의 가리지 않지만, <b>물체 바로 뒤</b>라 파지 직전 손목 뷰의 대부분을 차지한다.
+        <b>반드시 데이터 수집 전에 세워야 하고, 이건 고정 조명으로 우회할 수 없다</b> — 조명 문제가 아니기 때문이다.
+        다만 매번 동일한 근경 배경은 ACT 입력 분포를 안정시키는 쪽으로 작동한다. 수집 때 있기만 하면 된다.
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════ ACT ══════════ -->
+  <section id="act">
+    <div class="frame stack">
+      <div class="sec-head">
+        <span class="sec-tag">파지 · ACT</span>
+        <h2>왜 학습을 썼는가 — 네 겹</h2>
+      </div>
+
+      <div class="tw">
+        <table>
+          <thead><tr><th>겹</th><th>주장</th><th>근거</th></tr></thead>
+          <tbody>
+            <tr>
+              <td class="n">1</td>
+              <td><b>왜 학습인가</b><br>규칙이 실패하는 지점이 실제로 있다</td>
+              <td>파지 대상의 위치는 <b>차체 정지 산포(±30mm)의 함수</b>라 사전에 알 수 없다. 정밀 도킹 설비 없이 이 오차를 흡수해야 한다</td>
+            </tr>
+            <tr>
+              <td class="n">2</td>
+              <td><b>왜 정밀 주행 대신인가</b><br>저가 하드웨어의 산포를 지능으로 흡수</td>
+              <td>엔코더 없는 AMR은 매번 같은 자리에 서지 못한다. 접근은 마커·VGR이, 마지막 수 cm는 손목 카메라 ACT가 흡수한다 — <b>차체가 정확히 설 필요가 없다. 어긋난 만큼 팔이 본다</b></td>
+            </tr>
+            <tr>
+              <td class="n">3</td>
+              <td><b>왜 하필 ACT인가</b><br>엣지에서 도는 유일한 구조</td>
+              <td>Action Chunking(<span class="m">chunk_size=100</span>) — 추론 1회가 미래 100스텝. 30Hz 제어 기준 <b>1회 = 3.3초 분량</b>이라 추론이 1Hz여도 제어는 30Hz로 돈다. <b>GPU 서버 없이 RPi 5 온보드에서 학습 정책이 돈다</b></td>
+            </tr>
+            <tr>
+              <td class="n">4</td>
+              <td><b>학습 + 결정론적 안전층</b><br>산업 적용의 정석</td>
+              <td>ACT 출력 위에 STS3215 Load 세이프티 클램프(적 <span class="num">80%</span> / 황 <span class="num">40%</span>)가 실시간으로 얹힌다 — <b>신경망 출력을 그대로 믿지 않고 결정론적 안전장치로 감쌌다</b></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>카메라는 2대다</h3>
+      <div class="tw">
+        <table>
+          <thead><tr><th>카메라</th><th>역할</th><th>성격</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><b>손목 SO-ARM 2MP</b> (USB)<br>팔로워암 손목</td>
+              <td><b>ACT 입력 전부</b> — 접근·근접 정렬·파지</td>
+              <td>정색 · <b>단일 장애점</b> — 마운트가 한 번이라도 움직이면 그때까지의 데이터가 무효</td>
+            </tr>
+            <tr>
+              <td><b>CSI NoIR V2 8MP</b><br>섀시</td>
+              <td><b>VGR + HSV 물체 검출 + 대시보드 표시</b></td>
+              <td><b>IR 차단 필터 없음 → 색 왜곡</b></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="note warn">
+        <strong>감지 카메라가 NoIR이라는 것이 지금 가장 큰 미해결 항목이다.</strong>
+        IR 차단 필터가 없어 근적외선이 R 채널로 들어오고, <b>노랑이 주황·빨강 쪽으로 밀린다.</b>
+        하필 구분해야 하는 대상이 적색 vs 황색이라 Hue 축에서 가장 위험한 조합이고,
+        <b>판정표 4행 중 3행이 여기 걸려 있다.</b><br><br>
+        대책은 비용 낮은 순으로 —
+        ① <b>조명을 LED로</b>(백열·할로겐 금지, 0원) ② 두 카메라 AWB·자동노출 고정(0원)
+        ③ 외장 IR-cut 필터 ④ 형상 특징 병용(면적·채움률·원형도)
+        ⑤ <b>보유 중인 Innomaker(정색)로 교체</b> — 신규 구매는 마지막이다.<br><br>
+        ①은 <b>KY-026 오검출 회피와 방향이 같다</b> — 백열·할로겐은 760~1100nm를 많이 내 화염 센서도 흔든다.
+        <b>조명 하나만 LED로 바꾸면 두 문제가 같이 준다.</b>
+      </div>
+
+      <div class="prose stack-s">
+        <h3>VGR과 ACT는 직렬이다</h3>
+        <p>
+          <b>ACT를 쓴다고 VGR을 빼면 안 된다.</b> 빼면 ±30mm 전 범위를 데이터로 덮어야 하고 에피소드 수가 몇 배로 뛴다.
+          VGR(호모그래피 거친 정렬)로 먼저 접으면 ACT는 좁은 범위만 배우면 되고 같은 데이터로 훨씬 잘 된다.
+          <b>학습의 사용 범위를 절제했다는 증거가 여기 남는다.</b>
+        </p>
+        <h3>파지는 왜 2회인가</h3>
+        <p>
+          두 파지가 증명하는 것이 다르다. 적색은 <b>센서 융합 판정</b>을, 황색은
+          <b>색이 판정 절차 자체를 바꾼다는 것</b>과 <b>단일 정책이 두 물체를 처리한다는 것</b>을 증명한다.
+          황색을 빼면 모든 물체가 적색이 되어 색이 판정에 아무 영향도 주지 않고,
+          로봇이 「바퀴 달린 가스 경보기」로 축소된다. 고정된 위치에서 한 번 집는 장면은
+          프리셋 재생과 화면상 구분되지도 않는다.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════ 비상 ══════════ -->
+  <section id="emg">
+    <div class="frame stack">
+      <div class="sec-head">
+        <span class="sec-tag">비상 처리</span>
+        <h2>화재는 「정지」가 아니라 「복귀」다</h2>
+      </div>
+
+      <div class="tw">
+        <table>
+          <thead><tr><th>종류</th><th>트리거</th><th>부저</th><th>주행</th><th>하트비트</th><th>해제</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><span class="m">RETURN</span><br><span class="chip fix">신설</span></td>
+              <td>화염 감지</td><td>ON</td><td><b>스테이션 복귀</b></td>
+              <td><b>유지</b></td><td>도착 시 자동</td>
+            </tr>
+            <tr>
+              <td><span class="m">EMERGENCY</span></td>
+              <td>저전압 · 통신두절 · E-stop · 파지 3회 실패</td>
+              <td>ON</td><td>즉시 정지</td><td>차단</td><td><span class="m">/mission/reset</span> (사람)</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="note">
+        <strong>화재는 「로봇을 못 믿겠다」가 아니라 「여기서 빠져나가라」다.</strong>
+        주행 능력이 살아 있어야 하는 비상이므로 하트비트를 끊으면 안 된다.
+        4계층 정지 구조는 그대로 두고, <span class="m">RETURN</span>은 그 <b>바깥의 미션 레벨 사건</b>으로 둔다.
+      </div>
+
+      <div class="prose stack-s">
+        <h3>이탈은 도망이 아니라 표준 대응이다</h3>
+        <p>
+          화재 시 로봇의 역할은 <b>감지 · 경보 · 이탈</b>이다. 진압은 고정 소화 설비와 사람의 몫이다.
+          그리고 브러시 DC 모터로 구동되는 AMR은 가연성 분위기에서 <b>그 자체가 점화원</b>이다.
+          따라서 이탈은 자기 보호가 아니라 <b>현장에서 점화원 하나를 제거하는 안전 조치</b>다.
+        </p>
+        <p>
+          이 프레임이면 <i>「왜 불을 끄지 않습니까」</i>라는 질문이 <b>이해도를 증명할 기회</b>로 바뀐다.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════ 역할별 작업 ══════════ -->
+  <section id="work">
+    <div class="frame stack">
+      <div class="sec-head">
+        <span class="sec-tag">역할별 작업</span>
+        <h2>지금 비어 있는 것</h2>
+      </div>
+
+      <h3><span class="owner">진우</span> &nbsp;ROS 2</h3>
+      <div class="tw">
+        <table>
+          <thead><tr><th>항목</th><th>파일</th><th>규모</th></tr></thead>
+          <tbody>
+            <tr><td><b><span class="m">last_recv_time</span> 갱신 누락</b> — 한 줄인데 하트비트 설계 전체를 무력화하고 있다</td><td><span class="m">amr_bridge_node.py</span></td><td>한 줄</td></tr>
+            <tr><td><b>포트 통일</b> — 코드 8765 / 문서 5002. 틀리면 ENV가 아예 안 붙는다</td><td><span class="m">sensor_bridge_node.py</span></td><td>한 줄</td></tr>
+            <tr><td><b><span class="m">CLASSIFY</span> 판정 + 진입 조건 반전</b> — 지금은 가스가 떠야만 진입해서 <b>황색을 영원히 못 잡는다</b></td><td><span class="m">mission_orchestrator_node.py</span></td><td>중</td></tr>
+            <tr><td><b><span class="m">RETURN</span> 상태 신설</b> — 하트비트 유지 · 부저 ON · 복귀</td><td>〃</td><td>중</td></tr>
+            <tr><td><b>출발 절차</b> — <span class="m">/mission/start</span> + 점검 7항목</td><td>〃</td><td>중</td></tr>
+            <tr><td><b>ACT 추론 루프 구현</b> — 현재 전부 TODO, 더미 모드</td><td><span class="m">arm_act_node.py</span></td><td><b>대</b></td></tr>
+            <tr><td>손목 카메라 구독 활성화 · <span class="m">POLICY_PATHS</span> 단일화</td><td>〃</td><td>소</td></tr>
+            <tr><td><b>VGR 소비</b> — <span class="m">center_x/center_y</span>가 발행되나 소비처가 없다</td><td><span class="m">mission_orchestrator_node.py</span></td><td>중</td></tr>
+            <tr><td>대시보드 — 통과 판정 표시 · 점검 7항목 표시 · 출발 버튼</td><td><span class="m">hazardbot_dashboard</span></td><td>중</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3><span class="owner">승환</span> &nbsp;ESP32 DRIVE + ACT</h3>
+      <div class="tw">
+        <table>
+          <thead><tr><th>항목</th><th>규모</th><th>기한</th></tr></thead>
+          <tbody>
+            <tr><td><b>TCP 클라이언트 전체</b> — 현재 어디에도 <span class="m">WiFiClient</span>가 없다. WiFi는 OTA에만 쓰고 있다. <b>이 시나리오에서 가장 큰 미구현 덩어리</b></td><td><b>대</b></td><td>—</td></tr>
+            <tr><td><span class="m">&lt;HB,138&gt;</span> 수신 + <span class="m">RPI_TIMEOUT</span> 감시 · <span class="m">&lt;MOVE,L,R&gt;</span> 수신 · <span class="m">&lt;SENS&gt;</span> 송신 · <span class="m">&lt;STOP,70&gt;</span> 수신</td><td>중</td><td>—</td></tr>
+            <tr><td><b>소구획 6개 제작</b> (P1·P2·P3 × ㄷ자 2) + 조명 고정</td><td>—</td><td><b>수집 전</b></td></tr>
+            <tr><td>그리퍼 폼 패드 · 컵 무게추 · 위험 표식 부착</td><td>—</td><td><b>수집 전</b></td></tr>
+            <tr><td><b>그리퍼 진입 확인</b> — 셀이 파지를 막지 않는가</td><td>—</td><td><b>수집 전</b></td></tr>
+            <tr><td>캘리브레이션 재조정 (기본자세 화각 좌측 편향)</td><td>—</td><td><b>수집 전</b></td></tr>
+            <tr><td><b>적색·황색 HSV 분리 검증 — 카메라 2대에서 각각</b><br>감지 = CSI NoIR (IR 차단 필터 없음) / 파지 = 손목 SO-ARM (정색)</td><td>—</td><td><b>수집 전 · 소구획 설치 후</b></td></tr>
+            <tr><td>데이터 수집 (두 물체를 한 데이터셋에) → 학습 → 체크포인트</td><td>—</td><td>—</td></tr>
+            <tr><td><b>성공률 판정</b> — 물체별 10회 중 8회 미만이면 프리셋 폴백</td><td>—</td><td><b>8/21</b></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3><span class="owner">강희</span> &nbsp;ESP32 ENV</h3>
+      <div class="tw">
+        <table>
+          <thead><tr><th>항목</th><th>규모</th></tr></thead>
+          <tbody>
+            <tr><td>접속 포트를 진우와 통일</td><td>소</td></tr>
+            <tr><td><span class="m">&lt;BUZZ,n&gt;</span> 수신 → G26 능동 부저 구동</td><td>소</td></tr>
+            <tr><td><span class="m">&lt;SENS&gt;</span> 필드 정리 — <span class="m">DISTANCE</span>·<span class="m">BAT</span> 제거 (DRIVE 소관)</td><td>소</td></tr>
+            <tr><td><b>화염(KY-026 G27, LOW 액티브) 필드 확실히 채울 것</b> — 시나리오 엔딩이 여기에 걸려 있다</td><td>소</td></tr>
+            <tr><td>테이크 사이 환기 — 최소 1~2분. <b>촬영 중에는 정지</b> (바람이 종이컵을 넘어뜨린다)</td><td>소</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════ 지켜야 할 것 ══════════ -->
+  <section id="rules">
+    <div class="frame stack">
+      <div class="sec-head">
+        <span class="sec-tag">지켜야 할 것</span>
+        <h2>되돌릴 수 없는 순서와, 말하지 않을 것들</h2>
+      </div>
+
+      <h3>데이터 수집 전에 끝나야 하는 것 — 순서를 바꿀 수 없다</h3>
+      <ol class="order">
+        <li>세트 제작 — 라인 · 마커 · 격리함 · 얕은 링 · <b>소구획</b> · 물체</li>
+        <li><b>조명 고정</b> — 자연광 차단, 촬영용 조명 포함해 전부 켜 둔 상태로</li>
+        <li>그리퍼 폼 패드 · 컵 무게추 · 황색 위험 표식</li>
+        <li><b>그리퍼 진입 확인</b> — 셀의 개구부 폭·높이가 파지를 막지 않는가</li>
+        <li><b>격리함 뚜껑 확인</b> — 내경 높이 · 열린 뚜껑이 투입 경로를 막지 않는가 · 열림 각도 재현</li>
+        <li>캘리브레이션 재조정</li>
+        <li><b>적색·황색 HSV 분리 검증 — 카메라 2대에서 각각</b> · 최종 조명·최종 근경 배경에서. 정책 1개의 성립 조건</li>
+        <li class="gate"><b>═══ 데이터 수집 ═══ 여기부터 되돌릴 수 없다</b><br>뚜껑 닫기까지 시연해 녹화한다</li>
+        <li>학습 → 체크포인트 → <span class="m">POLICY_PATHS</span> 연결</li>
+        <li><b>8/21 성공률 판정</b> — 미달 시 프리셋 + VGR 폴백</li>
+        <li>촬영</li>
+      </ol>
+
+      <div class="note warn">
+        <strong>수집 위쪽 항목을 나중에 손대면 수집한 데이터가 통째로 무효가 된다.</strong>
+        그리퍼 · 물체 외형 · 무게 · 조명 · <b>소구획</b>은 전부 손목 카메라가 보는 화면이거나 서보 부하다.
+        폼 패드 하나를 나중에 붙여도 두께만큼 개구가 줄어 <b>적색 데이터까지</b> 무효가 된다.
+      </div>
+
+      <h3>뚜껑은 찍어두되, 학습에 넣을지는 나중에 정한다</h3>
+      <p>
+        격리함 뚜껑은 <b>경첩식</b>이라 잡을 필요도, 끼울 필요도 없다 — 그리퍼를 닫은 채 밀어
+        <b>수직을 조금 넘긴 지점에서 손을 떼면</b> 중력이 닫는다. 팔이 닫힌 뚜껑을 누르는 순간이 없으므로
+        <span class="m">Load</span> 클램프가 오작동하지 않는다.
+      </p>
+      <p>
+        문제는 데이터 예산 하나다. 뚜껑을 학습에 넣으면 같은 예산에서 <b>파지 몫이 줄어</b>
+        <b>8/21 게이트(물체별 10회 중 8회)</b>를 위협한다. 그렇다고 안 찍으면 나중에 못 찍는다.
+      </p>
+      <div class="note">
+        <strong>그래서 수집은 전체, 학습은 나눠서 한다.</strong>
+        텔레옵으로는 <b>뚜껑 닫기까지 전부 녹화</b>한다 — 에피소드당 <span class="num">3~4초</span>다.
+        학습은 <b>A = 전체</b>를 먼저 돌리고, 8/21 기준에 못 미치면 <b>B = 파지까지 잘라서</b> 다시 돌린다.
+        <b>잘라내는 건 스크립트 작업이지만, 안 찍은 건 전량 재수집이다</b> — 프론트 카메라에서 배운 것과 같다.
+        A/B 선택은 지금 하지 않아도 된다. <b>녹화만 빠뜨리지 않으면 된다.</b>
+      </div>
+
+      <h3>물리 배치에서 틀리면 핵심 장면이 죽는 것</h3>
+      <ul class="plain">
+        <li><b>향 없는 소분 용기(P1)을 향 있는 소분 용기(P2)보다 먼저 배치한다.</b> MQ-2 회복 시간은 약 30초이고 이건 예열과 무관한 물성이다. 순서가 뒤집히면 잔류 가스로 정상품을 위험물로 오판하고, 데모의 핵심 장면이 그대로 실패 장면이 된다.</li>
+        <li><b>P2 셀의 뒤쪽 개구부를 막지 않는다.</b> 향이 셀 안에 고이면 로봇이 떠난 뒤에도 남는다. P2와 P3를 떨어뜨린 배치(혼재 제한)가 여기서도 잔류 가스 대책을 겸한다.</li>
+        <li><b>촬영 중에는 환기를 정지한다.</b> 바람이 종이컵을 넘어뜨린다 — 환기와 종이컵은 동시에 못 간다.</li>
+        <li><b>캔들 반경 안에 LiPo 배터리와 향을 두지 않는다.</b> 소화 도구 상시 비치, 화기 담당 1인을 프레임 밖에 지정한다.</li>
+      </ul>
+
+      <h3>영상·발표에서 말하지 않을 것</h3>
+      <ul class="plain ban">
+        <li>특정 구역을 <b>국제 표준의 등급 명칭</b>(Zone 0 등)으로 부르지 않는다</li>
+        <li>실제 <b>방폭 표지(Ex 육각형)</b>를 소품으로 쓰지 않는다</li>
+        <li>실제 내용물이 없는 모형에 <b>임의의 GHS 그림문자</b>를 붙이지 않는다</li>
+        <li>검정 주행 라인을 <b>법정 안전통로 색상</b>이라고 설명하지 않는다</li>
+        <li>로봇이 <b>스스로 복귀해 충전</b>하는 것처럼 표현하지 않는다 — 자동 도킹 충전은 구현하지 않았다</li>
+        <li><b>「안전구역 복귀」라고도 부르지 않는다</b> — 후진 이탈은 이격만 하지 안전구역에 도착하지 않는다. 「점화원 이탈 · 관제 보고」로 부른다</li>
+        <li>후진을 <b>「자율 회피 주행」</b>이라고 부르지 않는다 — 라인을 따라가지 않는 개루프 직선 후진이고 후방 감지도 없다. 실제로 한 일은 <b>정해진 거리만큼 물러난 것</b>이다</li>
+        <li>우리 세트를 <b>「Fab 재현」</b>이라고 하지 않는다 — 「인화성 물질 취급 구역」을 유지한다</li>
+        <li>인용할 <b>사고는 익명화</b>한다 — 「최근 국내 반도체 사업장에서」. 특정 기업을 사고와 로봇 양쪽에 걸치면 공격적으로 읽힌다</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ══════════ 미확정 ══════════ -->
+  <section id="open">
+    <div class="frame stack">
+      <div class="sec-head">
+        <span class="sec-tag">미확정</span>
+        <h2>아직 정해지지 않은 것</h2>
+      </div>
+
+      <div class="tw">
+        <table>
+          <thead><tr><th>항목</th><th>담당</th><th>기한</th><th>영향</th></tr></thead>
+          <tbody>
+            <tr><td><b>시연 공간 확보</b> — 위치·크기·조명·환기</td><td><span class="owner">팀 전체</span></td><td><b>즉시</b></td><td>다른 모든 것의 선행 조건</td></tr>
+            <tr><td><b>NoIR 적색·황색 분리 실측</b> — 감지 카메라가 NoIR임이 8/16에 판명. 미실행</td><td><span class="owner">진우</span><span class="owner">승환</span></td><td><b>수집 전</b></td><td><b>판정표 4행 중 3행이 여기 걸린다</b></td></tr>
+            <tr><td>촬영 조명 기종 — <b>LED 확보</b></td><td><span class="owner">강희</span></td><td>세트 제작 전</td><td>백열·할로겐이면 NoIR·KY-026 둘 다 흔들린다</td></tr>
+            <tr><td><b>소구획 치수</b> — 높이 · 접근면 폭 · 셀 내경. <b>그리퍼가 들어가는가</b></td><td><span class="owner">승환</span></td><td><b>세트 제작 전</b></td><td>셀이 파지를 막으면 ACT 데이터가 통째로 무의미해진다</td></tr>
+            <tr><td><span class="m">sensor_bridge</span> 포트 — 8765 vs 5002</td><td><span class="owner">진우</span><span class="owner">강희</span></td><td><b>즉시</b></td><td>틀리면 ENV가 아예 안 붙는다</td></tr>
+            <tr><td>부저 명령 형식 <span class="m">&lt;BUZZ,1&gt;</span> 확정</td><td><span class="owner">진우</span><span class="owner">강희</span></td><td>즉시</td><td>인터페이스 합의</td></tr>
+            <tr><td>P2 ↔ P3 이격 거리 — 혼재 제한 서사가 읽힐 만큼 떨어져 있는가</td><td><span class="owner">승환</span></td><td>세트 제작 전</td><td>배치 서사 · 잔류 가스</td></tr>
+            <tr><td>황색 물체를 <b>PLA 원뿔대로 교체</b>할지</td><td><span class="owner">승환</span></td><td><b>수집 전</b></td><td>파지 성공률 · 폼 패드 필요성</td></tr>
+            <tr><td><span class="m">GAS_THRESHOLD</span> 값 실측</td><td><span class="owner">승환</span><span class="owner">강희</span></td><td>세트 제작 후</td><td>음성/양성 사례를 가르는 값</td></tr>
+            <tr><td>정지 산포 실측</td><td><span class="owner">승환</span></td><td>세트 제작 후</td><td>VGR 보정 범위</td></tr>
+            <tr><td>격리함 정렬 방법 · 개수(2 vs 3) · <b>내경 높이</b> — 물체가 어떤 자세로 앉아도 뚜껑 아래인가</td><td><span class="owner">승환</span><span class="owner">진우</span></td><td>세트 제작 전</td><td>파지 후 놓기 자세 · <b>봉쇄 성공 여부</b></td></tr>
+            <tr><td>뚜껑 닫기를 <b>학습에 넣을지</b>(A) <b>잘라낼지</b>(B)</td><td><span class="owner">승환</span></td><td>8/21 판정 후</td><td>파지 성공률에 여유가 있는가</td></tr>
+            <tr><td>대시보드 완성도 — 버튼·점검 표시 가능한가</td><td><span class="owner">진우</span></td><td>8/18</td><td>오프닝 장면 방식</td></tr>
+            <tr><td>12mm 헥스 허브 보어 치수</td><td><span class="owner">승환</span></td><td>바퀴 도착 8/18~22</td><td>바퀴 장착</td></tr>
+            <tr><td>주행 속도 실측 → 코스 치수</td><td><span class="owner">승환</span></td><td>바퀴 도착 후</td><td>코스 크기. 소구획은 라인 정면에 없어 하한을 만들지 않는다</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════ 문서 지도 ══════════ -->
+  <section id="docs">
+    <div class="frame stack">
+      <div class="sec-head">
+        <span class="sec-tag">문서 지도</span>
+        <h2>무엇을 근거로 삼을 것인가</h2>
+      </div>
+
+      <div class="prose">
+        <p>
+          이 페이지는 <b>읽기 쉬운 요약</b>이다. 판정 로직·통신·FSM·구현 항목의
+          <b>정본은 아래 문서</b>이며, 충돌하면 정본이 이긴다.
+        </p>
+      </div>
+
+      <div class="tw">
+        <table>
+          <thead><tr><th>문서</th><th>성격</th><th>상태</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><span class="m">시나리오_확정_2026-08-15.md</span></td>
+              <td><b>시나리오 정본</b> — 판정 로직 · 통신 · FSM · 담당별 구현 항목</td>
+              <td><span class="chip fix">유효</span></td>
+            </tr>
+            <tr>
+              <td><span class="m">시나리오_확정_보완_2026-08-16.md</span></td>
+              <td>정본의 보완 — 파지 방식 근거 · 복귀 표현 · 도입 서사 · 구역 개념 · Q&amp;A</td>
+              <td><span class="chip fix">유효</span></td>
+            </tr>
+            <tr>
+              <td><span class="m">시연장_배치_2026-08-15.md</span></td>
+              <td>물리 배치 · 구획 벽 · 물체 · 환경 · 촬영 · 체크리스트</td>
+              <td><span class="chip fix">유효</span></td>
+            </tr>
+            <tr>
+              <td><span class="m">firmware/배선_확정_2026-08-14.md</span></td>
+              <td>배선 정본 — 4계층 정지 · 부저 G26 · VL53L1X 배정</td>
+              <td><span class="chip fix">유효</span></td>
+            </tr>
+            <tr>
+              <td><span class="m">firmware/센서_지도.md</span></td>
+              <td>센서 전체 한 장 — 3계층 구조 · 기각한 센서 후보 목록<br>8/16 갱신: 카메라 2대로 정정 · ZONE 판정표 폐기 · NoIR 색 검증 재개방</td>
+              <td><span class="chip fix">유효</span></td>
+            </tr>
+            <tr>
+              <td><span class="m">로봇암_카메라_구성정리.md</span></td>
+              <td>카메라 정본 — 손목 1뷰 · 도메인 갭 원칙 · 수집 전 체크리스트<br>8/16 정정: 「NoIR 색 리스크 소멸」·「추가 구매 종결」 <b>취소</b></td>
+              <td><span class="chip fix">유효</span></td>
+            </tr>
+            <tr>
+              <td><span class="m">HazardBot_시연계획_공유본.md</span></td>
+              <td>8/2 판 — 엔딩 · 구역 정의 · 파지 방식이 모두 옛 내용<br><b>시나리오 부분은 작업 근거로 쓰지 말 것.</b> 물리 규격 · 일정 · 역할은 유효</td>
+              <td><span class="chip risk">시나리오 폐기</span></td>
+            </tr>
+            <tr>
+              <td><span class="m">demo_video_scenario.md</span></td>
+              <td>영상 구성 정본 — 장면·나레이션·대시보드·편집 규칙<br>8/16 전면 갱신: 파지 방식 · 점검점 · 음성 사례 · <span class="m">RETURN</span> 엔딩 · 도입 서사<br><b>시간 배분은 재합의 필요</b> — 임무 169초 vs 연속시연 75초</td>
+              <td><span class="chip fix">유효</span></td>
+            </tr>
+            <tr>
+              <td><span class="m">demo_set_build_plan.md</span></td>
+              <td>세트 제작 정본 — 치수 · 재료 · 구매 · 조립 · 검증<br>8/16 전면 갱신: 점검점 · 소구획 6개 · 격리함 3개(<b>경첩 뚜껑</b> §5.5.1) · 적색 소분 용기 2개 · LED 조명</td>
+              <td><span class="chip fix">유효</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="frame">
+    HazardBot 시연 시나리오 · 확정 2026-08-16<br>
+    이 페이지는 요약본이다. 충돌 시 <span class="m">시나리오_확정_2026-08-15.md</span>가 정본이다.
+  </div>
+</footer>
