@@ -1,0 +1,530 @@
+<title>순찰 한 바퀴</title>
+
+<style>
+  /* ── 토큰: 라이트 ── */
+  :root {
+    --ground:    #F6F8F7;
+    --surface:   #FFFFFF;
+    --surface-2: #EEF2F1;
+    --ink:       #131C1B;
+    --ink-2:     #34433F;
+    --muted:     #5B6968;
+    --line:      #DCE4E1;
+    --line-soft: #E9EEEC;
+    --accent:    #0D5C55;
+    --accent-soft:#E2EFEC;
+    --red:       #B93227;
+    --amber:     #8F6704;
+    --flame:     #C8500F;
+    --ok:        #35705A;
+    --shadow:    0 1px 2px rgba(19,28,27,.05), 0 8px 24px -18px rgba(19,28,27,.3);
+  }
+  /* ── 토큰: 다크 (시스템) ── */
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:    #0E1413;
+      --surface:   #161F1D;
+      --surface-2: #1D2725;
+      --ink:       #E4EAE8;
+      --ink-2:     #C2CECB;
+      --muted:     #90A09D;
+      --line:      #27332F;
+      --line-soft: #1F2A27;
+      --accent:    #4CB1A2;
+      --accent-soft:#16302C;
+      --red:       #EC7A6E;
+      --amber:     #D6A538;
+      --flame:     #F2854A;
+      --ok:        #67B792;
+      --shadow:    0 1px 2px rgba(0,0,0,.4), 0 8px 24px -18px rgba(0,0,0,.85);
+    }
+  }
+  /* ── 토큰: 다크 (명시) ── */
+  :root[data-theme="dark"] {
+    --ground:    #0E1413;
+    --surface:   #161F1D;
+    --surface-2: #1D2725;
+    --ink:       #E4EAE8;
+    --ink-2:     #C2CECB;
+    --muted:     #90A09D;
+    --line:      #27332F;
+    --line-soft: #1F2A27;
+    --accent:    #4CB1A2;
+    --accent-soft:#16302C;
+    --red:       #EC7A6E;
+    --amber:     #D6A538;
+    --flame:     #F2854A;
+    --ok:        #67B792;
+    --shadow:    0 1px 2px rgba(0,0,0,.4), 0 8px 24px -18px rgba(0,0,0,.85);
+  }
+
+  :root {
+    --sans: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont,
+            "Apple SD Gothic Neo", "Malgun Gothic", "맑은 고딕", "Noto Sans KR",
+            system-ui, sans-serif;
+    --mono: "Cascadia Mono", ui-monospace, SFMono-Regular, "SF Mono",
+            Consolas, "D2Coding", "Liberation Mono", monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16.5px;
+    line-height: 1.75;
+    -webkit-font-smoothing: antialiased;
+    word-break: keep-all;
+    /* 🔴 anywhere 금지 — min-content 계산에 포함되어 표·플렉스 열이
+       한 글자 폭으로 찌그러지고 글자가 세로로 쌓인다. break-word 는 그러지 않는다. */
+    overflow-wrap: break-word;
+  }
+
+  .wrap { max-width: 680px; margin: 0 auto; padding: 0 24px 88px; }
+
+  header { padding: 68px 0 40px; }
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11.5px; letter-spacing: .17em; text-transform: uppercase;
+    color: var(--accent); margin: 0 0 14px;
+  }
+  h1 {
+    font-size: clamp(30px, 6vw, 40px);
+    line-height: 1.2; font-weight: 800; letter-spacing: -.03em;
+    margin: 0 0 18px; text-wrap: balance;
+  }
+  .lede { font-size: 18.5px; line-height: 1.66; color: var(--ink-2); margin: 0; }
+  .stamp {
+    margin-top: 24px; font-family: var(--mono); font-size: 12px; color: var(--muted);
+  }
+
+  section { padding: 38px 0 0; border-top: 1px solid var(--line); margin-top: 40px; }
+  h2 {
+    font-size: 21px; font-weight: 800; letter-spacing: -.022em;
+    margin: 0 0 20px; text-wrap: balance;
+  }
+  p { margin: 0 0 14px; }
+  p:last-child { margin-bottom: 0; }
+
+  code, .m {
+    font-family: var(--mono); font-size: .87em;
+    background: var(--surface-2); padding: 1px 5px; border-radius: 3px;
+  }
+
+  /* ── 순찰 스파인 ── */
+  .spine { display: flex; flex-direction: column; }
+  .stop {
+    display: grid; grid-template-columns: 88px minmax(0, 1fr); gap: 16px;
+    padding: 15px 0; border-bottom: 1px solid var(--line-soft);
+  }
+  .stop:last-child { border-bottom: none; }
+  .stop > * { min-width: 0; }
+  .stop .tag {
+    font-family: var(--mono); font-size: 13px; font-weight: 700;
+    letter-spacing: .04em; padding-top: 3px; color: var(--muted);
+  }
+  .stop .tag small {
+    display: block; font-size: 10.5px; font-weight: 500;
+    letter-spacing: .04em; color: var(--muted); margin-top: 3px;
+  }
+  .stop .did { font-size: 16.5px; font-weight: 700; letter-spacing: -.012em; }
+  /* 🔴 .note 와 이름이 겹치면 안 된다 — 단계 설명에 강조 블록 배경이 붙는다 */
+  .stop .sub { font-size: 14px; color: var(--muted); line-height: 1.6; margin-top: 3px; }
+  .stop.ok    .tag { color: var(--ok); }
+  .stop.red   .tag { color: var(--red); }
+  .stop.amb   .tag { color: var(--amber); }
+  .stop.flame .tag { color: var(--flame); }
+
+  /* ── 표 ── */
+  .tw { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; min-width: 420px; font-size: 15px; }
+  th, td { text-align: left; padding: 11px 14px; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
+  thead th {
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--muted); font-weight: 600;
+    background: var(--surface-2); border-bottom: 1px solid var(--line); white-space: nowrap;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  td:first-child { border-left: 3px solid transparent; font-weight: 700; white-space: nowrap; }
+  tr.r-ok    td:first-child { border-left-color: var(--ok);    color: var(--ok); }
+  tr.r-red   td:first-child { border-left-color: var(--red);   color: var(--red); }
+  tr.r-amb   td:first-child { border-left-color: var(--amber); color: var(--amber); }
+  tr.r-flame td:first-child { border-left-color: var(--flame); color: var(--flame); }
+  td.g { font-family: var(--mono); font-size: 13.5px; color: var(--muted); white-space: nowrap; }
+
+  /* ── 평면도 ── */
+  .plan {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 10px; padding: 10px; overflow-x: auto; box-shadow: var(--shadow);
+  }
+  .plan svg { display: block; width: 100%; min-width: 560px; height: auto; font-family: var(--sans); }
+  .plan svg text.mono { font-family: var(--mono); }
+  .legend {
+    display: flex; flex-wrap: wrap; gap: 7px 18px; margin-top: 14px;
+    font-family: var(--mono); font-size: 11.5px; color: var(--muted);
+  }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
+  .legend i { width: 11px; height: 11px; border-radius: 2px; flex: none; display: block; }
+
+  /* ── 강조 블록 ── */
+  .note {
+    border-left: 3px solid var(--accent); background: var(--accent-soft);
+    padding: 15px 18px; border-radius: 0 6px 6px 0; font-size: 15.5px; line-height: 1.68;
+  }
+
+  /* ── 바뀐 것 ── */
+  ul.diff { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 13px; }
+  ul.diff li {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 8px; padding: 13px 16px; box-shadow: var(--shadow);
+  }
+  ul.diff .was { font-size: 14px; color: var(--muted); text-decoration: line-through; }
+  ul.diff .now { font-size: 15.5px; font-weight: 700; letter-spacing: -.012em; display: block; margin-top: 2px; }
+  ul.diff .why { font-size: 13.5px; color: var(--muted); line-height: 1.6; margin-top: 5px; }
+
+  /* ── 단순 목록 ── */
+  /* 🔴 li 에 grid/flex 를 쓰지 않는다 — 컨테이너가 되면 <b> 가 자기 칸을 차지해
+     텍스트가 태그마다 줄바꿈된다. 마커는 절대배치로 걸고 본문은 일반 흐름에 둔다. */
+  ul.plain { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 11px; }
+  ul.plain li { position: relative; padding-left: 28px; font-size: 15.5px; line-height: 1.64; }
+  ul.plain li::before {
+    content: "—"; position: absolute; left: 0; top: 0;
+    color: var(--muted); font-family: var(--mono);
+  }
+  ul.ban li::before { content: "✕"; color: var(--red); font-weight: 700; }
+
+  footer {
+    margin-top: 44px; padding-top: 26px; border-top: 1px solid var(--line);
+    font-family: var(--mono); font-size: 12.5px; color: var(--muted); line-height: 2;
+  }
+  footer b { color: var(--ink-2); font-weight: 600; }
+
+  @media (max-width: 560px) {
+    .wrap { padding: 0 18px 64px; }
+    .stop { grid-template-columns: 74px minmax(0, 1fr); gap: 12px; }
+    header { padding-top: 48px; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+
+<div class="wrap">
+
+  <header>
+    <p class="eyebrow">HazardBot · 팀 공유</p>
+    <h1>순찰 한 바퀴에<br>일어나는 일</h1>
+    <p class="lede">
+      인화성 물질 취급구역을 돌며 점검점 넷을 확인한다.
+      하나는 <b>그냥 지나가고</b>, 둘은 <b>집어서 격리하고</b>, 마지막에는 <b>물러난다</b>.
+    </p>
+    <p class="stamp">2026-08-16 확정 · 승환 · 강희 · 진우</p>
+  </header>
+
+  <section>
+    <h2>순서</h2>
+    <div class="spine">
+
+      <div class="stop">
+        <div class="tag">출발<small>스테이션</small></div>
+        <div>
+          <div class="did">점검 7항목을 통과해야 출발한다</div>
+          <div class="sub">보드 접속 · 배터리 · 가스 기준선 · 화염 없음 · 카메라 · 정책 로드.
+            하나라도 실패하면 출발을 거부한다 — 3분 촬영 도중 멈추는 것보다 낫다.</div>
+        </div>
+      </div>
+
+      <div class="stop ok">
+        <div class="tag">P1<small>적색 · 향 X</small></div>
+        <div>
+          <div class="did">멈춰서 재고 → <b>통과</b></div>
+          <div class="sub">적색이지만 가스가 없다 — <b>격납이 유지되고 있다.</b>
+            <b>이 장면이 이 데모의 핵심이다</b> — 지나치는 장면이 없으면 이 로봇은 컬러 필터와 구분되지 않는다.</div>
+        </div>
+      </div>
+
+      <div class="stop red">
+        <div class="tag">P2<small>적색 · 향 O</small></div>
+        <div>
+          <div class="did">파지 → 격리함 → <b>뚜껑을 밀어 닫는다</b></div>
+          <div class="sub">같은 적색인데 가스가 있다. 격납이 깨졌다는 뜻이다.
+            <b>색이 같은데 판정이 갈렸다 — 색만 보는 시스템이라면 P1도 집었을 것이다.</b></div>
+        </div>
+      </div>
+
+      <div class="stop amb">
+        <div class="tag">P3<small>노란 종이컵</small></div>
+        <div>
+          <div class="did">가스를 <b>재지 않고</b> 파지 → 격리함 → 뚜껑</div>
+          <div class="sub"><b>산화성 고체</b>다. 여기 있어서는 안 되는 물질이고, <b>용기가 열려 있다.</b>
+            <b>고체는 가연성 가스를 내지 않아 잴 것이 없다.</b>
+            가스가 없는데 집는다 — <b>가스만 보는 시스템이라면 지나쳤을 것이다.</b><br>
+            밀폐 격리해 <b>접촉을 차단</b>하고, <b>반출은 관제에 보고</b>한다 — 격리함이 위치를 바꾸지는 못한다.</div>
+        </div>
+      </div>
+
+      <div class="stop flame">
+        <div class="tag">P4<small>캔들</small></div>
+        <div>
+          <div class="did">정지 → 부저 → <b>후진</b></div>
+          <div class="sub">불 쪽으로 가지 않는다. 이 로봇은 브러시 모터와 LiPo를 노출한 구조라
+            <b>스스로가 점화원 후보</b>다. 물러나는 것이 조치다.</div>
+        </div>
+      </div>
+
+      <div class="stop">
+        <div class="tag">끝<small>이격 지점</small></div>
+        <div>
+          <div class="did">부저를 울린 채 정지</div>
+          <div class="sub">스테이션까지 가지 않는다. 다음 테이크 전에 손으로 되돌려 놓는다.</div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section>
+    <h2>시연장</h2>
+
+    <div class="plan">
+      <svg viewBox="0 0 730 480" role="img"
+           aria-label="시연장 평면도. 시계 방향 주행 루프가 P1, P2, P3의 ㄷ자 소구획을 각각 가로지른다. 로봇은 개구부로 들어가 셀 안에서 서고 반대쪽으로 나온다. P1과 P2는 왼쪽에 인접해 있고 P3은 위쪽에 떨어져 있다. 오른쪽 P4 캔들과 아래쪽 스테이션에는 구획이 없으며, P4에서 후진 화살표가 왔던 길로 되돌아간다.">
+
+        <!-- 주행 라인 -->
+        <rect x="210" y="120" width="380" height="240" rx="34"
+              fill="none" stroke="var(--muted)" stroke-width="3" stroke-dasharray="8 7"/>
+
+        <!-- 진행 방향 (시계 방향) -->
+        <g fill="none" stroke="var(--muted)" stroke-width="2.4" stroke-linecap="round">
+          <path d="M203,248 L210,237 L217,248"/>
+          <path d="M280,120 L316,120 M316,120 L306,114 M316,120 L306,126"/>
+          <path d="M590,178 L590,214 M590,214 L584,203 M590,214 L596,203"/>
+          <path d="M330,360 L294,360 M294,360 L304,354 M294,360 L304,366"/>
+        </g>
+
+        <!-- P2 · 적색 향 있음 · 라인이 관통 -->
+        <g stroke="var(--red)" stroke-width="4.5" fill="none" stroke-linecap="round">
+          <path d="M190,157 L145,157 L145,233 L190,233"/>
+          <path d="M230,157 L275,157 L275,233 L230,233"/>
+        </g>
+        <circle cx="168" cy="195" r="8" fill="var(--red)"/>
+        <rect x="245" y="188" width="15" height="15" rx="2" fill="none" stroke="var(--red)" stroke-width="2.4"/>
+        <text class="mono" x="132" y="190" text-anchor="end" font-size="14" font-weight="700" fill="var(--red)">P2</text>
+        <text x="132" y="208" text-anchor="end" font-size="12.5" fill="var(--ink-2)">적색 · 향 있음 → 격리</text>
+
+        <!-- P1 · 적색 향 없음 · 라인이 관통 -->
+        <g stroke="var(--ok)" stroke-width="4.5" fill="none" stroke-linecap="round">
+          <path d="M190,250 L145,250 L145,326 L190,326"/>
+          <path d="M230,250 L275,250 L275,326 L230,326"/>
+        </g>
+        <circle cx="168" cy="288" r="8" fill="var(--ok)"/>
+        <text class="mono" x="132" y="283" text-anchor="end" font-size="14" font-weight="700" fill="var(--ok)">P1</text>
+        <text x="132" y="301" text-anchor="end" font-size="12.5" fill="var(--ink-2)">적색 · 향 없음 → 통과</text>
+        <text x="132" y="243" text-anchor="end" font-size="11.5" fill="var(--muted)">인접 — 같은 유별</text>
+
+        <!-- P3 · 노란 종이컵 · 라인이 관통 -->
+        <g stroke="var(--amber)" stroke-width="4.5" fill="none" stroke-linecap="round">
+          <path d="M340,100 L340,70 L460,70 L460,100"/>
+          <path d="M340,140 L340,170 L460,170 L460,140"/>
+        </g>
+        <circle cx="370" cy="150" r="8" fill="var(--amber)"/>
+        <rect x="423" y="143" width="15" height="15" rx="2" fill="none" stroke="var(--amber)" stroke-width="2.4"/>
+        <text class="mono" x="478" y="112" font-size="14" font-weight="700" fill="var(--amber)">P3</text>
+        <text x="478" y="130" font-size="12.5" fill="var(--ink-2)">산화성 고체 → 격리</text>
+        <text x="400" y="56" text-anchor="middle" font-size="11.5" fill="var(--muted)">적색과 이격 — 혼재 제한</text>
+
+        <!-- P4 · 캔들 · 구획 없음 -->
+        <circle cx="590" cy="300" r="8" fill="var(--flame)"/>
+        <text class="mono" x="564" y="296" text-anchor="end" font-size="14" font-weight="700" fill="var(--flame)">P4</text>
+        <text x="564" y="316" text-anchor="end" font-size="12.5" fill="var(--ink-2)">캔들</text>
+        <text x="564" y="336" text-anchor="end" font-size="12" font-weight="700" fill="var(--flame)">구획 없음 — 통로</text>
+
+        <!-- 후진 이탈 -->
+        <path d="M628,306 L628,228 M628,228 L621,241 M628,228 L635,241"
+              fill="none" stroke="var(--flame)" stroke-width="3.4" stroke-linecap="round"/>
+        <text class="mono" x="644" y="256" font-size="13" font-weight="700" fill="var(--flame)">후진</text>
+        <text x="644" y="274" font-size="11.5" fill="var(--muted)">왔던 길로</text>
+
+        <!-- 스테이션 -->
+        <path d="M400,360 L400,400" fill="none" stroke="var(--muted)" stroke-width="3" stroke-dasharray="8 7"/>
+        <rect x="353" y="400" width="94" height="26" rx="5" fill="var(--accent)"/>
+        <text class="mono" x="400" y="418" text-anchor="middle" font-size="12" font-weight="700" fill="var(--surface)">STATION</text>
+        <text x="400" y="446" text-anchor="middle" font-size="11.5" fill="var(--muted)">구획 없음 · 출발과 대기</text>
+      </svg>
+    </div>
+
+    <div class="legend">
+      <span><i style="background:var(--red)"></i>ㄷ자 소구획 — <b>라인이 가로지른다</b></span>
+      <span><i style="background:var(--muted)"></i>주행 라인 · 시계 방향</span>
+      <span><i style="background:var(--flame)"></i>P4 · 스테이션은 구획 없음</span>
+    </div>
+
+    <div class="note" style="margin-top:20px">
+      <b>로봇은 셀을 지나치지 않고 통과한다.</b>
+      개구부로 들어가 안에서 서고, 옆에 놓인 물체를 집어 같은 셀의 격리함에 넣고,
+      반대쪽으로 나온다. 개구부는 <b>차체가 지나가는 너비</b>다.
+    </div>
+
+    <div class="note" style="margin-top:14px">
+      <b>구획이 있으면 보관 지점, 없으면 통로다.</b>
+      P1 · P2 · P3에만 소구획을 두르고 P4와 스테이션에는 두지 않는다.
+      그러면 <b>통로에 불이 켜져 있다는 사실 자체가 비정상으로 읽힌다</b> — 자막 한 줄 없이.
+      적색 둘은 붙여 두고 황색은 떼어 놓는데, 유별이 다른 위험물을 같은 곳에 두지 않는 것이 실제 규칙이다.
+    </div>
+  </section>
+
+  <section>
+    <h2>판정 규칙 — 이게 전부다</h2>
+    <div class="tw">
+      <table>
+        <thead><tr><th>본 것</th><th>가스</th><th>하는 일</th></tr></thead>
+        <tbody>
+          <tr class="r-ok"><td>적색</td><td class="g">없음</td><td>통과 — 격납 유지</td></tr>
+          <tr class="r-red"><td>적색</td><td class="g">있음</td><td>파지 → 격리 → 봉쇄</td></tr>
+          <tr class="r-amb"><td>황색</td><td class="g">잴 것이 없다</td><td>파지 → 격리 → 봉쇄</td></tr>
+          <tr class="r-flame"><td>화염</td><td class="g">—</td><td>부저 + 후진</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note" style="margin-top:18px">
+      <b>판정에 점검점 번호가 들어가지 않는다.</b>
+      점검점 내용은 서로 바뀔 수 있다 — 캔들이 P1으로 가면 코드가 틀리면 안 된다.
+      로봇은 <b>눈앞에 있는 것</b>만 보고 위 표로 결정한다. 지점 번호는 기록용이다.
+    </div>
+
+    <h3 style="margin-top:34px">넷 다 위험물이다 — 위반의 종류가 다를 뿐이다</h3>
+    <div class="tw">
+      <table>
+        <thead><tr><th>지점</th><th>분류</th><th>상태</th><th>위치</th></tr></thead>
+        <tbody>
+          <tr class="r-ok"><td>P1</td><td class="g">위험물</td><td class="g">정상</td><td class="g">정상</td></tr>
+          <tr class="r-red"><td>P2</td><td class="g">위험물</td><td><b>격납 파손</b></td><td class="g">정상</td></tr>
+          <tr class="r-amb"><td>P3</td><td class="g">위험물</td><td class="g">정상</td><td><b>혼재 위반</b></td></tr>
+          <tr class="r-flame"><td>P4</td><td class="g">발화원</td><td class="g">—</td><td><b>통로</b></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note" style="margin-top:18px">
+      <b>「P1은 위험물이 아니다」로 말하지 않는다.</b>
+      IPA는 누출 여부와 관계없이 언제나 위험물이다 — 바뀌는 것은 분류가 아니라 <b>상태</b>다.<br><br>
+      그리고 이게 <b>「왜 한쪽만 가스를 조회하는가」의 가장 짧은 답</b>이다 —
+      <b>상태를 보려면 재야 하고, 위치는 보는 것으로 끝난다.</b><br><br>
+      <b>P1이 왜 핵심인지도 여기서 보인다</b> — 셋 다 위험물인데 <b>아무 이상이 없는 하나를 지나친다.</b>
+    </div>
+
+    <h3 style="margin-top:34px">세 지점이 각각 하나씩 반증한다</h3>
+    <p style="margin-bottom:16px">
+      「색과 가스를 모두 본다」는 <b>한 지점으로는 증명되지 않는다.</b>
+      P1과 P2는 색이 같으므로 색에 대해 아무것도 말하지 못한다 — 가스만 보는 감지기도 똑같이 동작한다.
+    </p>
+    <div class="tw">
+      <table>
+        <thead><tr><th>지점</th><th>조건</th><th>무엇을 배제하나</th></tr></thead>
+        <tbody>
+          <tr><td>P1</td><td class="g">적색 · 가스 X</td><td>기준점</td></tr>
+          <tr class="r-red"><td>P2</td><td class="g">적색 · 가스 O</td><td><b>색만 보는 필터</b>를 배제</td></tr>
+          <tr class="r-amb"><td>P3</td><td class="g">황색 · 가스 X</td><td><b>가스만 보는 감지기</b>를 배제</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note" style="margin-top:18px">
+      <b>그래서 P2에서 「색과 가스를 함께 봤다」고 말하면 안 된다.</b>
+      그 시점엔 아직 증명되지 않았다 — 「색을 쓴다」는 P3에서야 증명된다.
+    </div>
+  </section>
+
+  <section>
+    <h2>이 시연이 증명하는 것 셋</h2>
+    <ul class="plain">
+      <li><b>정상을 정상이라고 판단한다</b> — P1. 현장에서 비싼 것은 위험을 찾는 능력이 아니다.</li>
+      <li><b>하나의 학습 정책이 두 물체를 잡는다</b> — 적색·황색 둘 다 ACT, 정책 하나.
+        차체가 매번 다른 자리에 서도 팔이 그만큼 본다.</li>
+      <li><b>위험 앞에서 스스로 물러난다</b> — 얼어붙는 것이 아니라 점화원을 치우는 것이다.</li>
+    </ul>
+
+    <h3 style="margin-top:34px">세 점검점이 화재 삼요소다</h3>
+    <div class="tw">
+      <table>
+        <thead><tr><th>점검점</th><th>물질</th><th>삼요소</th></tr></thead>
+        <tbody>
+          <tr class="r-red"><td>P1 · P2</td><td>적색 · <b>IPA 세정용 용제</b></td><td><b>가연물</b></td></tr>
+          <tr class="r-amb"><td>P3</td><td>황색 · <b>산화성 고체</b></td><td><b>산소 공급원</b></td></tr>
+          <tr class="r-flame"><td>P4</td><td>캔들</td><td><b>점화원</b></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note" style="margin-top:18px">
+      <b>나열이 아니라 하나의 사고 시나리오다.</b> 그리고 순회 순서가 그대로 서사가 된다 —
+      <b>로봇은 치울 수 있는 것을 치우고, 못 치우는 것 앞에서는 물러난다.</b>
+      가연물을 격리하고, 산화제를 격리하고, 점화원은 치울 수 없으므로 스스로 물러난다.
+    </div>
+  </section>
+
+  <section>
+    <h2>8/16에 바뀐 것 — 예전 판을 들고 있다면</h2>
+    <ul class="diff">
+      <li>
+        <span class="was">ZONE 1 / 2 / 3 「일반 · 취급 · 위험구역」</span>
+        <b class="now">취급구역 하나 + 점검점 P1~P4</b>
+        <div class="why">국제 표준에서 Zone은 「그 장소에 반입 가능한 방폭 기기 등급」이라,
+          이름을 쓰면 이 로봇이 인증 기기라고 주장하게 된다.</div>
+      </li>
+      <li>
+        <span class="was">적색은 프리셋, 황색만 ACT</span>
+        <b class="now">둘 다 ACT · 정책 하나</b>
+        <div class="why">프리셋 경로가 아직 연결되지 않았고, 하나의 정책이 두 물체를 다루는 쪽이 주장도 강하다.</div>
+      </li>
+      <li>
+        <span class="was">적색 물체 1개</span>
+        <b class="now">적색 2개 — 향 있는 것과 없는 것</b>
+        <div class="why">지나치는 장면을 만들려면 같은 색·같은 모양인데 상태만 다른 짝이 필요하다.</div>
+      </li>
+      <li>
+        <span class="was">격리함은 위가 열린 상자, 투하로 끝</span>
+        <b class="now">경첩 뚜껑을 밀어서 닫는다</b>
+        <div class="why">봉쇄가 화면에서 완결된다. 뚜껑은 잡지 않고 밀기만 한다.</div>
+      </li>
+      <li>
+        <span class="was">황색은 「존재만으로 위험」하다</span>
+        <b class="now">황색 = 산화성 고체 — 인화성 구역에 있는 것 자체가 위반</b>
+        <div class="why">밀폐된 채 지정 장소에 있는 산화제는 위험하지 않다.
+          그리고 <b>고체는 가연성 가스를 내지 않아 잴 것이 없다</b> — 가스를 안 보는 이유가
+          설계자의 선택이 아니라 물리적 사실이 된다.</div>
+      </li>
+      <li>
+        <span class="was">소구획은 라인 옆에 있고, 그리퍼가 개구부로 들어간다</span>
+        <b class="now">라인이 소구획을 가로지른다 — 로봇이 들어간다</b>
+        <div class="why">개구부 폭 기준이 그리퍼에서 <b>차체</b>로 바뀐다.
+          대신 「그리퍼가 개구부를 통과하는가」라는 실패 지점이 사라진다 — 로봇이 이미 안에 있다.</div>
+      </li>
+      <li>
+        <span class="was">화염을 지나쳐 그대로 전진해 스테이션 복귀</span>
+        <b class="now">정지 → 부저 → 후진 이탈</b>
+        <div class="why">전진하면 로봇이 불을 발견하고 불 쪽으로 간다.
+          경보와 동작이 어긋나고, 「로봇이 점화원 후보」라는 우리 논리와도 모순이었다.</div>
+      </li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>말할 때 지키는 것</h2>
+    <ul class="plain ban">
+      <li>구역을 <b>Zone 0 · 1 · 2</b> 같은 표준 등급 이름으로 부르지 않는다</li>
+      <li>방폭 표지(Ex 육각형)나 GHS 그림문자를 <b>소품으로 붙이지 않는다</b> — 실제 내용물이 없다</li>
+      <li>로봇이 <b>스스로 복귀해 충전</b>하는 것처럼 말하지 않는다 — 자동 도킹은 구현하지 않았다</li>
+      <li><b>「안전구역 복귀」</b>라고 하지 않는다 — 후진은 이격만 한다.
+        <b>「점화원 이탈 · 관제 보고」</b>로 부른다</li>
+      <li>후진을 <b>「자율 회피 주행」</b>이라고 하지 않는다 — 정해진 거리만큼 물러난 것이다</li>
+      <li>우리 세트를 <b>「Fab 재현」</b>이라고 하지 않는다</li>
+      <li>인용할 <b>사고는 익명화</b>한다 — 특정 기업을 사고와 로봇 양쪽에 걸치지 않는다</li>
+    </ul>
+  </section>
+
+  <footer>
+    이 문서는 <b>바뀌지 않는 것</b>만 담았다 — 치수 · 임계값 · 일정 · 미확정 항목은 없다.<br><br>
+    자세한 내용은 &nbsp;<b>시나리오_확정_2026-08-15.md</b> (정본 · 판정 · 통신 · FSM)<br>
+    &nbsp;&nbsp;<b>시연장_배치_2026-08-15.md</b> (배치 · 소품) &nbsp;·&nbsp; <b>demo_set_build_plan.md</b> (제작 · 구매 · 검증)<br>
+    &nbsp;&nbsp;<b>demo_video_scenario.md</b> (촬영 · 시간 · 나레이션)
+  </footer>
+
+</div>
