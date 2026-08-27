@@ -9,6 +9,11 @@
 | `Base_SO101.stl` | 0.47 MB | 베이스 (섀시 마운팅 인터페이스) |
 | `Prusa_Follower_SO101.stl` | 4.83 MB | Prusa 프린터용 통합 모델 (전체 암) |
 | `Ender_Follower_SO101.stl` | 24.82 MB | Ender 프린터용 통합 모델 (전체 암) |
+| `BRACKET.stl` · `PCB Support.stl` | — | 브래킷 · PCB 서포트 |
+| `Waffle_Plate.stl` · `Waffle_Plate.3mf` | — | TB3 Waffle 플레이트 (3mf = 슬라이서 프로젝트) |
+| `tb3_pi_camera_frame.stp` · `tb3_pcb_support-ibb-01.stp` | — | TB3 카메라 프레임 · PCB 서포트 STEP |
+| `Hexagon Case.stl` | — | 육각 케이스 |
+| `1.68g_tb3_pi_camera_frame_PLA_13m19s.gcode` | — | 카메라 프레임 출력 G-code (PLA · 13m19s · 1.68g) |
 
 > 출처: [Hugging Face LeRobot SO-ARM101](https://github.com/huggingface/lerobot) 오픈소스 프레임. 사용한 프린터에 맞춰 `Prusa_*` 또는 `Ender_*` 중 하나를 슬라이싱한다.
 
@@ -24,10 +29,11 @@
 
 ## 자체 제작 어댑터
 
-LeRobot 원본은 테이블 클램프 고정 설계이므로, **2WD 섀시 마운팅용 베이스 어댑터 플레이트**는 별도 제작한다.
+LeRobot 원본은 테이블 클램프 고정 설계다. **2WD 섀시 마운팅용 베이스 어댑터**는 자체 모델링했다.
 
-- 위치: `hardware/stl/custom/chassis_adapter.stl` (예정 — 자체 모델링)
-- 섀시 나사 구멍에 맞춰 베이스 파트를 수정하여 출력
+- 위치: [`hardware/arm_base/`](../arm_base/)
+- `Base_SO101_chassis_v1.{step,stl}` → `v2` 로 개정. **v2 를 쓴다.**
+- `Base_SO101.step` 은 LeRobot 원본 베이스의 STEP 변환본이다 (수정 기준용)
 
 ## 라이선스
 

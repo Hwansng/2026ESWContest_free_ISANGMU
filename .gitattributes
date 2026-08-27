@@ -2,6 +2,10 @@
 *.stl   binary
 *.gcode binary
 *.3mf   binary
+*.step  binary
+*.stp   binary
+*.pdf   binary
+*.png   binary
 *.bin   binary
 *.elf   binary
 *.hex   binary

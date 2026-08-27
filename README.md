@@ -75,11 +75,12 @@
 1. Wi-Fi 라우터 부팅 + 양쪽 ESP32 시리얼 포트(COMx) 확인
 
 2. DRIVE 보드 펌웨어 업로드:
-   Arduino IDE → firmware/esp32_amr/esp32_amr.ino 열기
+   Arduino IDE → firmware/esp32_drive/esp32_line_pid/esp32_line_pid.ino 열기
    Tools → Board: "ESP32 Dev Module" → Port 선택 → Upload
 
 3. ENV 보드 펌웨어 업로드:
-   배선은 firmware/docs/amr_v9_4sensor_*_배선_가이드.md 참조
+   ※ ENV 스케치는 이 저장소에 없다 (강희 로컬). 배선·핀 정본만 있다:
+     firmware/docs/amr_v9_4sensor_*_배선_가이드.md · firmware/docs/배선_확정_2026-08-14.md
    Tools → Board: "ESP32 Dev Module" → Port 선택 → Upload
 
    ※ 로봇암은 ESP32 가 아니라 PC 에서 제어한다 (1선 반이중, 마스터 하나):
@@ -90,7 +91,7 @@
    cd ros2_ws
    colcon build --symlink-install
    source install/setup.bash
-   ros2 launch hazardbot_bringup mission.launch.py
+   ros2 launch hazardbot_dashboard hazardbot.launch.py
 
 5. 관제 대시보드 접속:
    브라우저에서 http://<RPi5_IP>:8080 접속
@@ -101,30 +102,33 @@
  # ➕ Source code
 
  ## 📝 DRIVE Firmware
- 펌웨어: [firmware/esp32_amr/esp32_amr.ino](firmware/esp32_amr/esp32_amr.ino)
+ 스케치: [`firmware/esp32_drive/`](firmware/esp32_drive/) · 배선·확정값 정본: [`firmware/docs/README.md`](firmware/docs/README.md)
  <br>
 
- `5종 센서 수집 · 위험 상태 판정 · 모터 PID · 라인트레이싱 · LiPo 모니터링`
+ `라인 추종 PD · 전압 피드포워드 · ToF 논블로킹 · 모터 정지 단독 권한`
 
   <details>
   <summary>알고리즘 설명 (요약)</summary>
 
 ```
-① MQ-135 가스 센서와 KY-026 불꽃 센서를 이용해 SAFE / WARNING / DANGER 상태를 판정한다.
+① 라인 추종 PD 루프 — 5채널 TCRT5000(검정 = HIGH), KP=60 · KD=25 · 주기 20ms.
 
-② Moving Average: MQ-135 값의 순간 노이즈를 줄이기 위해 최근 SAMPLE_COUNT개 평균을 사용한다.
+② 전압 피드포워드 — 실제듀티 = 목표듀티 × (12.0 / 측정전압).
+   배터리 전압이 내려가도 같은 속도를 낸다. 엔코더 속도 루프를 대체한 방식이다.
 
-③ Persistence Filter: 위험 조건이 DANGER_COUNT_THRESHOLD 이상 연속 감지될 때만 DANGER로 판정한다. 한 번 튄 값은 즉시 DANGER로 보지 않는다.
+③ VL53L1X 는 논블로킹으로 읽는다. 블로킹으로 읽으면 라인 PID 주기(20ms)가 무너진다.
+   정지 판정 임계는 300mm 단일 고정이다 (구간별 전환 · 마커 기반 전환은 폐기).
 
-④ Event-based State Message: 상태가 바뀌는 순간에만 RPi 5로 메시지를 송신한다.
+④ 후진은 개루프 직선이다. 라인센서가 전방에 있어 이 하드웨어로 후진 라인 추종은
+   제어적으로 불가능하다.
 
-⑤ XOR Checksum: 메시지 본문(CMD,VALUE)을 문자 단위로 XOR하여 체크섬을 생성한다. 수신 측이 데이터 무결성을 확인할 수 있도록 16진수 2자리로 부착한다.
+⑤ 정지 권한 — 모터를 멈추는 것은 DRIVE 뿐이다. RPi·ENV 는 정지를 요청할 뿐 직접 끊지 않는다.
+   STBY 10kΩ 풀다운으로 ESP32 가 죽거나 리셋되면 G4 가 하이임피던스가 되어 모터가 자동 정지한다.
 
-⑥ Message Format: <CMD,VALUE,CS>  예) <STATE,DANGER,5A>
+⑥ 하트비트 — 정지는 STOP 명령이 아니라 생존 신호로 건다.
+   RPi 사망 · WiFi 두절 · ENV 사망을 하나의 메커니즘으로 잡기 위해서다.
 
-⑦ FreeRTOS 듀얼 코어:
-   - Core 0: Wi-Fi TCP (RPi 5 통신)
-   - Core 1: 센서 읽기 + 모터 PID + 라인트레이싱
+⑦ Message Format: <CMD,VALUE,CS>  예) <BUZZ,1>  — XOR 8-bit 체크섬, 16진수 2자리
 ```
   </details>
 
@@ -200,15 +204,15 @@ HazardBot-2026/
 │   ├── scripts/          # teleop.ps1 · record_act.ps1
 │   └── tests/            # ACT 수집 테스트 3종
 ├── docs/
-│   ├── architecture.md   # 시스템 아키텍처 다이어그램
+│   ├── architecture.md   # 시스템 아키텍처 · 통신 · 판정 로직
 │   ├── contributing.md   # 협업 가이드 (브랜치 전략 · PR 프로세스)
-│   ├── schedule/         # 합동 작업일정 · 13주 공정표
+│   ├── schedule/         # 합동 작업일정 · 13주 공정표 · 로봇암 구축기록
+│   ├── act/              # ACT 수집 설계 · 구현 계획
 │   ├── scenario/         # 시나리오 · 시연장 배치 · 영상 구성
 │   ├── power/            # 전력 계통
 │   └── handover/         # 역할별 담당정리 · 팀 회신
 ├── firmware/
-│   ├── esp32_amr/        # DRIVE 펌웨어 (주행 · 라인트레이싱)
-│   ├── esp32_drive/      # DRIVE 시험 스케치 4종 (bringup · line · PID · OTA)
+│   ├── esp32_drive/      # DRIVE 주행 스케치 4종 (bringup · line · PID · OTA)
 │   ├── sts3215/          # 서보 버스 점검 · ID 부여
 │   └── docs/             # 센서 지도 · 구역 마커 설계 · 배선 가이드
 ├── hardware/
@@ -216,7 +220,7 @@ HazardBot-2026/
 │   └── stl/              # SO-ARM101 프레임 · 카메라 프레임 · 케이스
 ├── ros2_ws/              # ROS2 패키지 (RPi 5)
 ├── tools/                # rpi_check.py · ros2_ws_sync.ps1
-├── archive/              # 폐기된 설계 (ESP32-서보 직결 방식)
+├── archive/              # 폐기된 설계 (ESP32-서보 직결) · 로봇암 초기 계획
 └── README.md
 ```
 
