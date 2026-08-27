@@ -17,3 +17,13 @@ arm/tools/.*.json
 # 비밀 정보 (docs/contributing.md §7)
 secrets.h
 config/secrets.yaml
+
+# 3D 모델 — 출력에 실제로 쓴 3종만 두고 나머지는 제외 (hardware/README.md)
+*.stl
+!hardware/Waffle_Plate.stl
+!hardware/Follower_SO101.stl
+!hardware/Leader_SO101.stl
+*.step
+*.stp
+*.3mf
+*.gcode

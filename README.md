@@ -215,9 +215,7 @@ HazardBot-2026/
 │   ├── esp32_drive/      # DRIVE 주행 스케치 4종 (bringup · line · PID · OTA)
 │   ├── sts3215/          # 서보 버스 점검 · ID 부여
 │   └── docs/             # 센서 지도 · 구역 마커 설계 · 배선 가이드
-├── hardware/
-│   ├── arm_base/         # SO-ARM101 섀시 어댑터 v1/v2
-│   └── stl/              # SO-ARM101 프레임 · 카메라 프레임 · 케이스
+├── hardware/             # 출력에 쓴 STL 3종 (리더암 · 팔로워암 · Waffle 플레이트)
 ├── ros2_ws/              # ROS2 패키지 (RPi 5)
 ├── tools/                # rpi_check.py · ros2_ws_sync.ps1
 ├── archive/              # 폐기된 설계 (ESP32-서보 직결) · 로봇암 초기 계획
