@@ -13,3 +13,7 @@ __pycache__/
 
 # 캘리브레이션 중간 측정값 (정본은 arm/calibration/ 에 있다)
 arm/tools/.*.json
+
+# 비밀 정보 (docs/contributing.md §7)
+secrets.h
+config/secrets.yaml
