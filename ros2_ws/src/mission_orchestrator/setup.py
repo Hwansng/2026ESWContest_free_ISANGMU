@@ -1,6 +1,6 @@
 from setuptools import setup
 
-package_name = 'vision_node'
+package_name = 'mission_orchestrator'
 
 setup(
     name=package_name,
@@ -10,11 +10,11 @@ setup(
     zip_safe=True,
     maintainer='pi',
     maintainer_email='pi@todo.todo',
-    description='Vision Node OpenCV HSV',
+    description='Mission Orchestrator FSM Node',
     license='MIT',
     entry_points={
         'console_scripts': [
-            'vision_node = vision_node.vision_node:main',
+            'mission_orchestrator_node = mission_orchestrator.mission_orchestrator_node:main',
         ],
     },
 )

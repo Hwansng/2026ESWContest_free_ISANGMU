@@ -1,6 +1,6 @@
 from setuptools import setup
 
-package_name = 'vision_node'
+package_name = 'sensor_bridge'
 
 setup(
     name=package_name,
@@ -10,11 +10,11 @@ setup(
     zip_safe=True,
     maintainer='pi',
     maintainer_email='pi@todo.todo',
-    description='Vision Node OpenCV HSV',
+    description='ENV Board TCP Bridge',
     license='MIT',
     entry_points={
         'console_scripts': [
-            'vision_node = vision_node.vision_node:main',
+            'sensor_bridge_node = sensor_bridge.sensor_bridge_node:main',
         ],
     },
 )
