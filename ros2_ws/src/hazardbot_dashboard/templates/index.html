@@ -46,7 +46,6 @@
             padding-bottom: 8px;
         }
 
-        /* 미션 상태 */
         .state-badge {
             display: inline-block;
             padding: 8px 16px;
@@ -64,7 +63,6 @@
         .state-ISOLATE   { background:#004488; color:#44aaff; }
         .state-EMERGENCY { background:#440000; color:#ff4444; }
 
-        /* 위험 등급 */
         .level-badge {
             font-size: 36px;
             font-weight: bold;
@@ -76,7 +74,6 @@
         .level-2 { color: #ff8800; }
         .level-3 { color: #ff0000; }
 
-        /* 센서값 */
         .sensor-row {
             display: flex;
             justify-content: space-between;
@@ -87,7 +84,6 @@
         .sensor-row .label { color: #888; }
         .sensor-row .value { color: #fff; font-weight: bold; }
 
-        /* 서보 */
         .servo-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -103,7 +99,6 @@
         .servo-item .name { color: #888; margin-bottom: 4px; }
         .servo-item .val  { color: #00ff88; font-size: 13px; }
 
-        /* RPi 헬스 */
         .health-temp {
             font-size: 32px;
             font-weight: bold;
@@ -113,7 +108,6 @@
         .temp-warn { color: #ffff00; }
         .temp-hot  { color: #ff4444; }
 
-        /* 연결 상태 */
         .conn-dot {
             display: inline-block;
             width: 10px; height: 10px;
@@ -123,7 +117,6 @@
         .conn-ok   { background: #00ff88; }
         .conn-fail { background: #ff4444; }
 
-        /* 배터리 */
         .battery-bar {
             height: 20px;
             background: #222;
@@ -168,28 +161,16 @@
             </div>
         </div>
 
-        <!-- 센서 데이터 -->
+        <!-- 연결 상태, 신규 추가 -->
         <div class="card">
-            <h3>SENSORS</h3>
+            <h3>CONNECTION</h3>
             <div class="sensor-row">
-                <span class="label">거리 (VL53L1X)</span>
-                <span class="value"><span id="dist">0</span> mm</span>
+                <span class="label"><span id="amr-dot" class="conn-dot conn-fail"></span>AMR ESP32</span>
+                <span class="value" id="amr-status">미연결</span>
             </div>
             <div class="sensor-row">
-                <span class="label">MQ-2 (가연성)</span>
-                <span class="value"><span id="mq2">0</span> ppm</span>
-            </div>
-            <div class="sensor-row">
-                <span class="label">MQ-135 (VOC)</span>
-                <span class="value"><span id="mq135">0</span> ppm</span>
-            </div>
-            <div class="sensor-row">
-                <span class="label">온도</span>
-                <span class="value"><span id="temp">0</span> °C</span>
-            </div>
-            <div class="sensor-row">
-                <span class="label">화염</span>
-                <span class="value" id="flame">없음</span>
+                <span class="label"><span id="arm-dot" class="conn-dot conn-fail"></span>ARM ESP32</span>
+                <span class="value" id="arm-status">미연결</span>
             </div>
         </div>
 
@@ -222,41 +203,6 @@
             </div>
             <div style="font-size:12px; color:#888; margin-top:4px">
                 <span id="battery-pct">0</span>%
-            </div>
-        </div>
-
-        <!-- 구역별 판정 매트릭스 — 핵심 화면 증거 -->
-        <div class="card" style="grid-column: span 3">
-            <h3>구역별 판정 — 같은 값, 다른 판정</h3>
-            <table style="width:100%; border-collapse:collapse; font-size:13px;">
-                <tr style="border-bottom:1px solid #333; color:#888;">
-                    <th style="text-align:left; padding:6px;">구역</th>
-                    <th style="text-align:left; padding:6px;">가스(MQ) 원시값</th>
-                    <th style="text-align:left; padding:6px;">이 구역 임계값</th>
-                    <th style="text-align:left; padding:6px;">판정</th>
-                </tr>
-                <tr id="zone-row-1" style="border-bottom:1px solid #222;">
-                    <td style="padding:6px; color:#fff;">일반구역</td>
-                    <td style="padding:6px;"><span id="zone1-gas">-</span></td>
-                    <td style="padding:6px; color:#888;">300 이상 = 격리실패</td>
-                    <td style="padding:6px;" id="zone1-verdict">-</td>
-                </tr>
-                <tr id="zone-row-2" style="border-bottom:1px solid #222;">
-                    <td style="padding:6px; color:#fff;">취급구역</td>
-                    <td style="padding:6px;"><span id="zone2-gas">-</span></td>
-                    <td style="padding:6px; color:#888;">500 이상 = 주의</td>
-                    <td style="padding:6px;" id="zone2-verdict">-</td>
-                </tr>
-                <tr id="zone-row-3">
-                    <td style="padding:6px; color:#fff;">위험구역</td>
-                    <td style="padding:6px;"><span id="zone3-gas">-</span></td>
-                    <td style="padding:6px; color:#888;">가스는 정상범위 (설계상 무시)</td>
-                    <td style="padding:6px;" id="zone3-verdict">-</td>
-                </tr>
-            </table>
-            <div style="margin-top:10px; font-size:11px; color:#666;">
-                같은 가스 수치라도 일반구역에서는 격리 실패를 뜻하고, 위험구역에서는 정상 범위입니다.
-                위험구역에서 위험한 것은 가스가 아니라 점화원입니다.
             </div>
         </div>
 
@@ -370,7 +316,6 @@
             stateEl.textContent = data.mission_state;
             stateEl.className = `state-badge state-${data.mission_state}`;
 
-            // 구역 표시 이름
             document.getElementById('zone-display').textContent =
                 data.zone_display || '알수없음';
 
@@ -382,28 +327,14 @@
             document.getElementById('hazard-type').textContent =
                 data.hazard.type || 'NORMAL';
 
-            // 센서
-            document.getElementById('dist').textContent =
-                data.sensors.dist_mm || 0;
-            document.getElementById('mq2').textContent =
-                data.gas.mq2 || 0;
-            document.getElementById('mq135').textContent =
-                data.gas.mq135 || 0;
-            document.getElementById('temp').textContent =
-                data.temp.temp || 0;
-            document.getElementById('flame').textContent =
-                data.temp.flame ? '🔥 감지!' : '없음';
-            document.getElementById('flame').style.color =
-                data.temp.flame ? '#ff4444' : '#00ff88';
-
             // 비전
             document.getElementById('vision-color').textContent =
                 data.vision.color || '-';
             document.getElementById('vision-angle').textContent =
                 data.vision.angle || '-';
 
-            // 배터리
-            const volt = data.battery || 0;
+            // 배터리, env_battery 기준으로 통일함
+            const volt = data.env_battery || 0;
             const pct  = Math.max(0, Math.min(100,
                 ((volt - 9.9) / (12.6 - 9.9)) * 100
             )).toFixed(0);
@@ -427,6 +358,19 @@
             thrEl.textContent = throttled;
             thrEl.style.color = throttled === '0x0' ? '#00ff88' : '#ff4444';
 
+            // 연결 상태, 신규
+            const amrOk = !!data.amr_connected;
+            document.getElementById('amr-dot').className =
+                'conn-dot ' + (amrOk ? 'conn-ok' : 'conn-fail');
+            document.getElementById('amr-status').textContent =
+                amrOk ? '연결됨' : '미연결';
+
+            const armOk = !!data.arm_connected;
+            document.getElementById('arm-dot').className =
+                'conn-dot ' + (armOk ? 'conn-ok' : 'conn-fail');
+            document.getElementById('arm-status').textContent =
+                armOk ? '연결됨' : '미연결';
+
             // 서보 피드백
             for (let i = 1; i <= 6; i++) {
                 const s = data.servo_feedback[String(i)];
@@ -437,15 +381,16 @@
                 }
             }
 
-            // ENV 보드
+            // ENV 보드, 수정: data.env_temp.flame -> data.env_flame.flame
             const mq135 = (data.env_gas && data.env_gas.mq135) || 0;
             const mq2 = (data.env_gas && data.env_gas.mq2) || 0;
-            const envGas = mq135;   // 판정 매트릭스 기준값 (MQ-135 사용)
 
             document.getElementById('env-mq135').textContent = mq135;
             document.getElementById('env-mq2').textContent = mq2;
             document.getElementById('env-flame').textContent =
-                (data.env_temp && data.env_temp.flame) ? '🔥 감지!' : '없음';
+                (data.env_flame && data.env_flame.flame) ? '🔥 감지!' : '없음';
+            document.getElementById('env-flame').style.color =
+                (data.env_flame && data.env_flame.flame) ? '#ff4444' : '#00ff88';
 
             const dist = data.env_distance && data.env_distance.distance_mm;
             document.getElementById('env-distance').textContent =
@@ -457,42 +402,6 @@
                 (data.env_state && data.env_state.state) || '-';
             document.getElementById('env-fault').textContent =
                 (data.env_state && data.env_state.fault) || '-';
-
-            // 구역별 판정 매트릭스 — 같은 값, 다른 판정
-            const thresholds = data.zone_thresholds || {};
-
-            document.getElementById('zone1-gas').textContent = envGas;
-            document.getElementById('zone2-gas').textContent = envGas;
-            document.getElementById('zone3-gas').textContent = envGas;
-
-            const t1 = (thresholds[1] && thresholds[1].gas_alert) || 300;
-            const t2 = (thresholds[2] && thresholds[2].gas_alert) || 500;
-
-            const v1 = document.getElementById('zone1-verdict');
-            v1.textContent = envGas >= t1 ? '🔴 격리 실패' : '🟢 정상';
-            v1.style.color = envGas >= t1 ? '#ff4444' : '#00ff88';
-
-            const v2 = document.getElementById('zone2-verdict');
-            v2.textContent = envGas >= t2 ? '🟡 주의' : '🟢 정상';
-            v2.style.color = envGas >= t2 ? '#ffff00' : '#00ff88';
-
-            const v3 = document.getElementById('zone3-verdict');
-            v3.textContent = '🟢 정상 범위 (설계상 무시)';
-            v3.style.color = '#00ff88';
-
-            // 현재 구역 강조
-            for (let z = 1; z <= 3; z++) {
-                const row = document.getElementById(`zone-row-${z}`);
-                if (row) {
-                    if (z === data.zone) {
-                        row.style.background = '#1a2a1a';
-                        row.style.outline = '1px solid #00ff88';
-                    } else {
-                        row.style.background = 'transparent';
-                        row.style.outline = 'none';
-                    }
-                }
-            }
         });
 
         socket.on('connect', () => addLog('대시보드 연결됨'));

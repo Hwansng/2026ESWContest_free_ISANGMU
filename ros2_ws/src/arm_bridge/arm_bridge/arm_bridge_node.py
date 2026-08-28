@@ -16,29 +16,37 @@ class ArmBridge(Node):
         self.pub_feedback = self.create_publisher(
             String, '/arm/servo_feedback', 10
         )
+        # 수정: 연결 상태 발행 추가함, 대시보드가 arm_connected로 구독함
+        self.pub_connected = self.create_publisher(String, '/arm/connected', 10)
 
         # Subscribers: ROS2 명령 → ESP32 #2
         self.create_subscription(String, '/arm/command',    self.arm_cmd_cb,  10)
         self.create_subscription(String, '/arm/led_cmd',    self.led_cb,      10)
         self.create_subscription(String, '/arm/buzzer_cmd', self.buzzer_cb,   10)
         self.create_subscription(String, '/arm/grip_cmd',   self.grip_cb,     10)
+        # 수정: mission_orchestrator가 EMERGENCY 진입시 /arm/emergency로 보내는 STOP을
+        # 받는 구독이 이 파일에 아예 없었음, emergency_stop 메서드가 죽은 코드였던 원인
+        self.create_subscription(String, '/arm/emergency', self.emergency_cb, 10)
+
         self.conn = None
         self.conn_lock = threading.Lock()
 
         threading.Thread(target=self.tcp_server, daemon=True).start()
         self.create_timer(0.5, self.heartbeat)
-        self.get_logger().info('ARM Bridge 노드 시작!')
+        # 수정: 연결 상태를 1초마다 발행하는 타이머 추가함
+        self.create_timer(1.0, self.publish_connected)
+        self.get_logger().info('ARM Bridge 노드 시작함')
 
     def tcp_server(self):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
             server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             server.bind(('0.0.0.0', ARM_PORT))
             server.listen(1)
-            self.get_logger().info(f'포트 {ARM_PORT} 에서 ESP32 #2 기다리는 중...')
+            self.get_logger().info(f'포트 {ARM_PORT} 에서 ESP32 #2 대기중')
             while rclpy.ok():
                 try:
                     conn, addr = server.accept()
-                    self.get_logger().info(f'ESP32 #2 연결됨! IP: {addr[0]}')
+                    self.get_logger().info(f'ESP32 #2 연결됨 IP: {addr[0]}')
                     with self.conn_lock:
                         self.conn = conn
                     threading.Thread(
@@ -66,7 +74,7 @@ class ArmBridge(Node):
                 break
         with self.conn_lock:
             self.conn = None
-        self.get_logger().warn('ESP32 #2 연결 종료.')
+        self.get_logger().warn('ESP32 #2 연결 종료됨')
 
     def parse_msg(self, line: str):
         if not (line.startswith('<') and line.endswith('>')):
@@ -92,7 +100,7 @@ class ArmBridge(Node):
             received = int(parts[-1])
             data_str = ','.join(parts[:-1])
             return sum(ord(c) for c in data_str) % 256 == received
-        except:
+        except (ValueError, IndexError):
             return False
 
     def calc_checksum(self, *fields):
@@ -111,16 +119,13 @@ class ArmBridge(Node):
                 self.get_logger().warn('ESP32 #2 미연결')
 
     def arm_cmd_cb(self, msg: String):
-        # msg.data 예시: "90,45,120,80,135,30"
         angles = msg.data.strip().split(',')
         self.build_and_send('ARM', *angles)
 
     def led_cb(self, msg: String):
-        # msg.data 예시: "2" (0=초록 1=주황 2=빨강 3=흰색)
         self.build_and_send('LED', msg.data.strip())
 
     def grip_cb(self, msg: String):
-        # msg.data 예시: "CLOSE,80" 또는 "OPEN,0"
         parts = msg.data.strip().split(',')
         if len(parts) >= 2:
             direction, threshold = parts[0], parts[1]
@@ -128,17 +133,29 @@ class ArmBridge(Node):
             self.get_logger().info(f'GRIP 명령 전송: {direction} 임계값={threshold}%')
 
     def buzzer_cb(self, msg: String):
-        # msg.data 예시: "1" (1=경보 0=정지)
         self.build_and_send('BUZZ', msg.data.strip())
 
     def emergency_stop(self):
-        self.get_logger().error('!!! ARM 비상 정지 !!!')
+        self.get_logger().error('ARM 비상 정지함')
         self.build_and_send('STOP')
+
+    # 수정: 새로 추가한 구독의 콜백, 이제 emergency_stop이 실제로 호출됨
+    def emergency_cb(self, msg: String):
+        self.get_logger().error(f'/arm/emergency 수신: {msg.data}, 비상 정지 실행함')
+        self.emergency_stop()
 
     def heartbeat(self):
         with self.conn_lock:
             status = '연결됨' if self.conn else '미연결'
         self.get_logger().debug(f'ESP32 #2 상태: {status}')
+
+    # 수정: 연결 상태를 문자열 true/false로 발행함, dashboard_node의 arm_connected_cb와 짝맞춤
+    def publish_connected(self):
+        with self.conn_lock:
+            connected = self.conn is not None
+        msg = String()
+        msg.data = 'true' if connected else 'false'
+        self.pub_connected.publish(msg)
 
 
 def main(args=None):
