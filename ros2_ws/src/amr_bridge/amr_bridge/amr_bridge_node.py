@@ -4,7 +4,7 @@ AMR ESP32 #1과 TCP로 통신하며 센서/이동 명령을 ROS2 토픽과 연�
 """
 import rclpy
 from rclpy.node import Node
-from std_msgs.msg import String, Bool, Float32
+from std_msgs.msg import String, Bool, Float32, Int8
 from geometry_msgs.msg import Twist
 import socket
 import threading
@@ -23,11 +23,15 @@ class AmrBridge(Node):
         self.pub_gas     = self.create_publisher(String,  '/amr/gas',         10)
         self.pub_temp    = self.create_publisher(String,  '/amr/temp',        10)
         self.pub_battery = self.create_publisher(Float32, '/amr/battery',     10)
-        self.pub_near    = self.create_publisher(Bool,    '/amr/object_near', 10)
+        self.pub_near        = self.create_publisher(Bool, '/amr/object_near', 10)
+        self.pub_stop_index  = self.create_publisher(Int8, '/amr/stop_index',  10)
+        self.pub_return_done = self.create_publisher(Bool, '/amr/return_done', 10)
         self.conn = None
         self.conn_lock = threading.Lock()
         self.last_recv_time = time.time()   # ← 이거 있는지 확인
         self.create_timer(0.5, self.check_timeout)
+
+        self.returning_active = False   # RETURN 송신 후 RETDONE 전까지 True — 중복 송신 방지
 
         # ── Subscriber: ROS2 명령을 ESP32 #1으로 전달 ──
         self.create_subscription(
@@ -35,6 +39,10 @@ class AmrBridge(Node):
         )
         # ── mission_orchestrator의 하트비트를 받아 DRIVE로 전달 ──
         self.create_subscription(String, '/mission/heartbeat', self.heartbeat_cb, 10)
+        # ── hazard_detector가 화염 감지 시 후진을 요청 ──
+        self.create_subscription(Bool, '/hazard/return_request', self.return_request_cb, 10)
+        # ── 원격 출발 — DRIVE 시리얼에 로컬로 손댈 수 없을 때 RPi에서 대신 <GO> 송신 ──
+        self.create_subscription(Bool, '/amr/start_request', self.start_request_cb, 10)
 
         self.conn = None          # ESP32 #1 소켓 (연결되면 채워짐)
         self.conn_lock = threading.Lock()
@@ -112,6 +120,8 @@ class AmrBridge(Node):
     FAULT_NAMES  = ['OK', 'ESTOP', 'LIPO', 'SENSOR', 'RPI_TIMEOUT', 'HAZARD']
 
     def parse_msg(self, line: str):
+        self.last_recv_time = time.time()   # 🔴 이게 빠져 있으면 check_timeout()이 2초마다 conn을 끊는다
+
         if not (line.startswith('<') and line.endswith('>')):
             self.get_logger().debug(f'무시된 메시지: {line}')
             return
@@ -166,6 +176,23 @@ class AmrBridge(Node):
                 f'batt={data["battery_v"]}V state={data["state"]} '
                 f'action={data["action"]} fault={data["fault"]}'
             )
+
+            # 🔵 2026-08-28 스케치부터 fault 뒤에 dist·stopIndex 가 덧붙는다
+            #    (esp32_drive_tcp.ino §9). 옛 8필드 프레임과도 호환되도록 있을 때만 읽는다.
+            if len(parts) >= 10:
+                stop_index = int(parts[8])
+                self.pub_stop_index.publish(Int8(data=stop_index))
+
+        # ── DETECT: 정지 마커 도달 — 비전 캡처 트리거 ──
+        elif cmd == 'DETECT':
+            self.pub_near.publish(Bool(data=True))
+            self.get_logger().info('DETECT 수신 — /amr/object_near 발행 (비전 캡처 트리거)')
+
+        # ── RETDONE: RETURN(후진) 완료 ──
+        elif cmd == 'RETDONE':
+            self.returning_active = False
+            self.pub_return_done.publish(Bool(data=True))
+            self.get_logger().info('RETDONE 수신 — 후진 완료')
 
         else:
             self.get_logger().debug(f'알 수 없는 CMD: {cmd}')
@@ -225,6 +252,32 @@ class AmrBridge(Node):
         self.build_and_send('STOP')
 
     # ════════════════════════════════════════════
+    # 화염 감지 시 hazard_detector가 요청하는 후진(RETURN)
+    # ════════════════════════════════════════════
+    def return_request_cb(self, msg: Bool):
+        if not msg.data:
+            return
+        if self.returning_active:
+            self.get_logger().debug('RETURN 이미 진행 중 — 재요청 무시')
+            return
+        self.returning_active = True
+        self.build_and_send('RETURN')
+        self.get_logger().warn('🔴 RETURN 송신 — 화염 감지로 후진 시작')
+
+    # ════════════════════════════════════════════
+    # 원격 출발 — <GO> 송신 (2026-08-30, DRIVE esp32_drive_tcp.ino와 짝)
+    # DRIVE가 시리얼 'g'와 동일하게 STBY ON + 라인추종 시작 + ESTOP 해제까지 처리한다.
+    # ════════════════════════════════════════════
+    def start_request_cb(self, msg: Bool):
+        if not msg.data:
+            return
+        self.send_go()
+
+    def send_go(self):
+        self.build_and_send('GO')
+        self.get_logger().info('GO 송신 — 원격 라인추종 시작 요청')
+
+    # ════════════════════════════════════════════
     # 하트비트: 연결 상태 주기적 로그
     # ════════════════════════════════════════════
     def heartbeat_cb(self, msg: String):
@@ -232,6 +285,11 @@ class AmrBridge(Node):
         self.build_and_send('HB')  # 최소 페이로드로 하트비트 신호만 전송
 
     def heartbeat(self):
+        # 🔵 2026-08-30 — mission_orchestrator 없이(파지 제외 시연) 이 노드 단독으로도
+        # DRIVE 타임아웃(RPI_TIMEOUT_MS=1000ms)을 안 넘기도록 자체 HB도 같이 보낸다.
+        # mission_orchestrator가 붙어있으면 heartbeat_cb의 HB와 중복되지만 무해하다
+        # (DRIVE는 유효 프레임이면 뭐든 하트비트로 친다).
+        self.build_and_send('HB')
         with self.conn_lock:
             status = '연결됨' if self.conn else '미연결'
         self.get_logger().debug(f'ESP32 #1 상태: {status}')

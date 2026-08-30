@@ -58,11 +58,34 @@
         .state-IDLE      { background:#333; color:#aaa; }
         .state-PATROL    { background:#004400; color:#00ff88; }
         .state-DETECTED  { background:#444400; color:#ffff00; }
-        .state-APPROACH  { background:#004444; color:#00ffff; }
-        .state-GRIP      { background:#004488; color:#4488ff; }
-        .state-TRANSPORT { background:#440044; color:#ff44ff; }
-        .state-ISOLATE   { background:#004488; color:#44aaff; }
         .state-EMERGENCY { background:#440000; color:#ff4444; }
+
+        /* 위험물체 판정 문장 */
+        .verdict-color-red    { color: #ff4444; }
+        .verdict-color-yellow { color: #ffdd00; }
+        .verdict-sentence {
+            font-size: 15px;
+            line-height: 1.5;
+            margin-top: 10px;
+            padding: 10px;
+            background: #111;
+            border-radius: 4px;
+            min-height: 44px;
+        }
+        .verdict-none { color: #555; }
+
+        /* GAS_CHECK 결과 */
+        .gas-result-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 13px;
+        }
+        .gas-DETECTED { background:#440000; color:#ff4444; }
+        .gas-CLEAR    { background:#004400; color:#00ff88; }
+        .gas-ERROR    { background:#444400; color:#ffff00; }
+        .gas-none     { background:#222; color:#666; }
 
         /* 위험 등급 */
         .level-badge {
@@ -86,22 +109,6 @@
         }
         .sensor-row .label { color: #888; }
         .sensor-row .value { color: #fff; font-weight: bold; }
-
-        /* 서보 */
-        .servo-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
-        }
-        .servo-item {
-            background: #222;
-            border-radius: 4px;
-            padding: 8px;
-            text-align: center;
-            font-size: 11px;
-        }
-        .servo-item .name { color: #888; margin-bottom: 4px; }
-        .servo-item .val  { color: #00ff88; font-size: 13px; }
 
         /* RPi 헬스 */
         .health-temp {
@@ -152,11 +159,44 @@
             </div>
         </div>
 
-        <!-- 위험 등급 -->
+        <!-- 위험물체 판정 -->
+        <div class="card" style="grid-column: span 2">
+            <h3>위험물체 판정</h3>
+            <div style="display:flex; align-items:center; gap:16px;">
+                <div id="hazard-level" class="level-badge level-0">L0</div>
+                <div>
+                    <div id="hazard-type" style="color:#888; font-size:12px">NORMAL</div>
+                    <div id="hazard-color-badge" style="font-size:12px; margin-top:2px"></div>
+                </div>
+            </div>
+            <div id="hazard-sentence" class="verdict-sentence verdict-none">
+                아직 판정된 물체가 없습니다.
+            </div>
+        </div>
+
+        <!-- 가스 정밀검사 (GAS_CHECK, v11) -->
         <div class="card">
-            <h3>HAZARD LEVEL</h3>
-            <div id="hazard-level" class="level-badge level-0">L0</div>
-            <div id="hazard-type" style="color:#888; font-size:12px; margin-top:4px">NORMAL</div>
+            <h3>가스 정밀검사 (GAS_CHECK)</h3>
+            <div class="sensor-row">
+                <span class="label">대상 구역</span>
+                <span class="value" id="gas-zone">-</span>
+            </div>
+            <div class="sensor-row">
+                <span class="label">판정</span>
+                <span class="value"><span id="gas-result" class="gas-result-badge gas-none">대기중</span></span>
+            </div>
+            <div class="sensor-row">
+                <span class="label">baseline</span>
+                <span class="value" id="gas-baseline">-</span>
+            </div>
+            <div class="sensor-row">
+                <span class="label">최저 원시값</span>
+                <span class="value" id="gas-minraw">-</span>
+            </div>
+            <div class="sensor-row">
+                <span class="label">약화율</span>
+                <span class="value"><span id="gas-weakpct">-</span>%</span>
+            </div>
         </div>
 
         <!-- RPi5 헬스 -->
@@ -225,41 +265,6 @@
             </div>
         </div>
 
-        <!-- 구역별 판정 매트릭스 — 핵심 화면 증거 -->
-        <div class="card" style="grid-column: span 3">
-            <h3>구역별 판정 — 같은 값, 다른 판정</h3>
-            <table style="width:100%; border-collapse:collapse; font-size:13px;">
-                <tr style="border-bottom:1px solid #333; color:#888;">
-                    <th style="text-align:left; padding:6px;">구역</th>
-                    <th style="text-align:left; padding:6px;">가스(MQ) 원시값</th>
-                    <th style="text-align:left; padding:6px;">이 구역 임계값</th>
-                    <th style="text-align:left; padding:6px;">판정</th>
-                </tr>
-                <tr id="zone-row-1" style="border-bottom:1px solid #222;">
-                    <td style="padding:6px; color:#fff;">일반구역</td>
-                    <td style="padding:6px;"><span id="zone1-gas">-</span></td>
-                    <td style="padding:6px; color:#888;">300 이상 = 격리실패</td>
-                    <td style="padding:6px;" id="zone1-verdict">-</td>
-                </tr>
-                <tr id="zone-row-2" style="border-bottom:1px solid #222;">
-                    <td style="padding:6px; color:#fff;">취급구역</td>
-                    <td style="padding:6px;"><span id="zone2-gas">-</span></td>
-                    <td style="padding:6px; color:#888;">500 이상 = 주의</td>
-                    <td style="padding:6px;" id="zone2-verdict">-</td>
-                </tr>
-                <tr id="zone-row-3">
-                    <td style="padding:6px; color:#fff;">위험구역</td>
-                    <td style="padding:6px;"><span id="zone3-gas">-</span></td>
-                    <td style="padding:6px; color:#888;">가스는 정상범위 (설계상 무시)</td>
-                    <td style="padding:6px;" id="zone3-verdict">-</td>
-                </tr>
-            </table>
-            <div style="margin-top:10px; font-size:11px; color:#666;">
-                같은 가스 수치라도 일반구역에서는 격리 실패를 뜻하고, 위험구역에서는 정상 범위입니다.
-                위험구역에서 위험한 것은 가스가 아니라 점화원입니다.
-            </div>
-        </div>
-
         <!-- ENV 보드 상태 -->
         <div class="card">
             <h3>ENV BOARD (sensor_bridge)</h3>
@@ -293,51 +298,8 @@
             </div>
         </div>
 
-        <!-- 서보 피드백 -->
-        <div class="card" style="grid-column: span 2">
-            <h3>SERVO FEEDBACK (STS3215)</h3>
-            <div class="servo-grid">
-                <div class="servo-item">
-                    <div class="name">1 Base</div>
-                    <div class="val" id="s1-pos">-</div>
-                    <div style="color:#888;font-size:10px">Load: <span id="s1-load">-</span>%</div>
-                    <div style="color:#888;font-size:10px">Temp: <span id="s1-temp">-</span>°C</div>
-                </div>
-                <div class="servo-item">
-                    <div class="name">2 Shoulder</div>
-                    <div class="val" id="s2-pos">-</div>
-                    <div style="color:#888;font-size:10px">Load: <span id="s2-load">-</span>%</div>
-                    <div style="color:#888;font-size:10px">Temp: <span id="s2-temp">-</span>°C</div>
-                </div>
-                <div class="servo-item">
-                    <div class="name">3 Elbow</div>
-                    <div class="val" id="s3-pos">-</div>
-                    <div style="color:#888;font-size:10px">Load: <span id="s3-load">-</span>%</div>
-                    <div style="color:#888;font-size:10px">Temp: <span id="s3-temp">-</span>°C</div>
-                </div>
-                <div class="servo-item">
-                    <div class="name">4 Wrist Pitch</div>
-                    <div class="val" id="s4-pos">-</div>
-                    <div style="color:#888;font-size:10px">Load: <span id="s4-load">-</span>%</div>
-                    <div style="color:#888;font-size:10px">Temp: <span id="s4-temp">-</span>°C</div>
-                </div>
-                <div class="servo-item">
-                    <div class="name">5 Wrist Roll</div>
-                    <div class="val" id="s5-pos">-</div>
-                    <div style="color:#888;font-size:10px">Load: <span id="s5-load">-</span>%</div>
-                    <div style="color:#888;font-size:10px">Temp: <span id="s5-temp">-</span>°C</div>
-                </div>
-                <div class="servo-item">
-                    <div class="name">6 Gripper</div>
-                    <div class="val" id="s6-pos">-</div>
-                    <div style="color:#888;font-size:10px">Load: <span id="s6-load">-</span>%</div>
-                    <div style="color:#888;font-size:10px">Temp: <span id="s6-temp">-</span>°C</div>
-                </div>
-            </div>
-        </div>
-
         <!-- 이벤트 로그 -->
-        <div class="card">
+        <div class="card" style="grid-column: span 2">
             <h3>EVENT LOG</h3>
             <div id="event-log"
                  style="font-size:11px; color:#888; height:120px;
@@ -381,6 +343,27 @@
             levelEl.className = `level-badge level-${level}`;
             document.getElementById('hazard-type').textContent =
                 data.hazard.type || 'NORMAL';
+
+            const hColorBadge = document.getElementById('hazard-color-badge');
+            const hColor = data.hazard.color;
+            if (hColor === 'red') {
+                hColorBadge.textContent = '● 빨강 물체';
+                hColorBadge.className = 'verdict-color-red';
+            } else if (hColor === 'yellow') {
+                hColorBadge.textContent = '● 노랑 물체';
+                hColorBadge.className = 'verdict-color-yellow';
+            } else {
+                hColorBadge.textContent = '';
+            }
+
+            const hSentence = document.getElementById('hazard-sentence');
+            if (data.hazard.detail) {
+                hSentence.textContent = data.hazard.detail;
+                hSentence.classList.remove('verdict-none');
+            } else {
+                hSentence.textContent = '아직 판정된 물체가 없습니다.';
+                hSentence.classList.add('verdict-none');
+            }
 
             // 센서
             document.getElementById('dist').textContent =
@@ -427,20 +410,28 @@
             thrEl.textContent = throttled;
             thrEl.style.color = throttled === '0x0' ? '#00ff88' : '#ff4444';
 
-            // 서보 피드백
-            for (let i = 1; i <= 6; i++) {
-                const s = data.servo_feedback[String(i)];
-                if (s) {
-                    document.getElementById(`s${i}-pos`).textContent  = s.pos;
-                    document.getElementById(`s${i}-load`).textContent = s.load;
-                    document.getElementById(`s${i}-temp`).textContent = s.temp;
-                }
+            // GAS_CHECK 결과 (v11)
+            const gr = data.env_gas_result || {};
+            document.getElementById('gas-zone').textContent = gr.zone || '-';
+            const grEl = document.getElementById('gas-result');
+            if (gr.result) {
+                const labels = {DETECTED: '🔴 검출 — 위험', CLEAR: '🟢 정상 — 통과', ERROR: '🟡 오류 — 판정 보류'};
+                grEl.textContent = labels[gr.result] || gr.result;
+                grEl.className = 'gas-result-badge gas-' + gr.result;
+            } else {
+                grEl.textContent = '대기중';
+                grEl.className = 'gas-result-badge gas-none';
             }
+            document.getElementById('gas-baseline').textContent =
+                (gr.baseline === undefined || gr.baseline === null) ? '-' : gr.baseline;
+            document.getElementById('gas-minraw').textContent =
+                (gr.minimum_raw === undefined || gr.minimum_raw === null) ? '-' : gr.minimum_raw;
+            document.getElementById('gas-weakpct').textContent =
+                (gr.weak_percent === undefined || gr.weak_percent === null) ? '-' : gr.weak_percent;
 
             // ENV 보드
             const mq135 = (data.env_gas && data.env_gas.mq135) || 0;
             const mq2 = (data.env_gas && data.env_gas.mq2) || 0;
-            const envGas = mq135;   // 판정 매트릭스 기준값 (MQ-135 사용)
 
             document.getElementById('env-mq135').textContent = mq135;
             document.getElementById('env-mq2').textContent = mq2;
@@ -457,42 +448,6 @@
                 (data.env_state && data.env_state.state) || '-';
             document.getElementById('env-fault').textContent =
                 (data.env_state && data.env_state.fault) || '-';
-
-            // 구역별 판정 매트릭스 — 같은 값, 다른 판정
-            const thresholds = data.zone_thresholds || {};
-
-            document.getElementById('zone1-gas').textContent = envGas;
-            document.getElementById('zone2-gas').textContent = envGas;
-            document.getElementById('zone3-gas').textContent = envGas;
-
-            const t1 = (thresholds[1] && thresholds[1].gas_alert) || 300;
-            const t2 = (thresholds[2] && thresholds[2].gas_alert) || 500;
-
-            const v1 = document.getElementById('zone1-verdict');
-            v1.textContent = envGas >= t1 ? '🔴 격리 실패' : '🟢 정상';
-            v1.style.color = envGas >= t1 ? '#ff4444' : '#00ff88';
-
-            const v2 = document.getElementById('zone2-verdict');
-            v2.textContent = envGas >= t2 ? '🟡 주의' : '🟢 정상';
-            v2.style.color = envGas >= t2 ? '#ffff00' : '#00ff88';
-
-            const v3 = document.getElementById('zone3-verdict');
-            v3.textContent = '🟢 정상 범위 (설계상 무시)';
-            v3.style.color = '#00ff88';
-
-            // 현재 구역 강조
-            for (let z = 1; z <= 3; z++) {
-                const row = document.getElementById(`zone-row-${z}`);
-                if (row) {
-                    if (z === data.zone) {
-                        row.style.background = '#1a2a1a';
-                        row.style.outline = '1px solid #00ff88';
-                    } else {
-                        row.style.background = 'transparent';
-                        row.style.outline = 'none';
-                    }
-                }
-            }
         });
 
         socket.on('connect', () => addLog('대시보드 연결됨'));

@@ -36,17 +36,16 @@ dashboard_data = {
     'rpi_health': {'cpu_temp': 0.0, 'throttled': '0x0'},
     'amr_connected': False,
     'arm_connected': False,
-    # ── 신규: ENV 보드 데이터 ──
+    # ── ENV 보드 데이터 ──
     'env_gas': {'gas': 0},
     'env_temp': {'flame': 0},
     'env_battery': 0.0,
     'env_distance': {'distance_mm': None},
     'env_state': {'state': 'SAFE', 'action': 'NORMAL_MOTION', 'fault': 'OK'},
-    # ── 신규: 구역별 임계값 (문서 §2 판정 매트릭스) ──
-    'zone_thresholds': {
-        1: {'gas_alert': 300, 'gas_label': '일반구역 — 가스 검출시 격리실패'},
-        2: {'gas_alert': 500, 'gas_label': '취급구역 — 가스 주의'},
-        3: {'gas_alert': 9999, 'gas_label': '위험구역 — 가스 정상범위(설계상 무시)'},
+    # ── v11 GAS_CHECK 결과 (sensor_bridge_node의 /env/gas_result) ──
+    'env_gas_result': {
+        'zone': None, 'result': None,
+        'baseline': None, 'minimum_raw': None, 'weak_percent': None,
     },
 }
 
@@ -89,6 +88,7 @@ class DashboardNode(Node):
         self.create_subscription(Float32, '/env/battery', self.env_battery_cb,  10)
         self.create_subscription(String, '/env/state',    self.env_state_cb,    10)
         self.create_subscription(String, '/env/distance', self.env_distance_cb, 10)
+        self.create_subscription(String, '/env/gas_result', self.env_gas_result_cb, 10)
 
         # RPi5 헬스 타이머 (5초마다)
         self.create_timer(5.0, self.check_rpi_health)
@@ -144,6 +144,9 @@ class DashboardNode(Node):
 
     def env_distance_cb(self, msg: String):
         dashboard_data['env_distance'] = json.loads(msg.data)
+
+    def env_gas_result_cb(self, msg: String):
+        dashboard_data['env_gas_result'] = json.loads(msg.data)
 
     def image_cb(self, msg):
         try:
