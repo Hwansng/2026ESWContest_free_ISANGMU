@@ -1,3 +1,10 @@
+"""
+[레거시 — 현재 사용 안 함]
+초기 개발 단계 <VISION,...,CS> 형식 검증용 테스트 도구임. 실제 vision_node.py는
+JSON으로 발행하기 때문에, 이 노드를 지금 실행하면 정상 메시지도 전부
+"체크섬/형식 오류"로 뜸. 실제 /vision/detected 확인은
+`ros2 topic echo /vision/detected`로 하면 됨.
+"""
 """테스트용 더미 구독 노드.
 
 /vision/detected(String)를 구독해 <VISION,...,CS> 메시지의 체크섬을 검증하고
@@ -27,7 +34,7 @@ class DummySubscriber(Node):
             self.get_logger().error(f"체크섬/형식 오류: {msg.data}")
             return
         cmd, value = parsed
-        fields = value.split(":")           # color:cx:cy:w:h:angle:asym
+        fields = value.split(":")
         if cmd != "VISION" or len(fields) != 7:
             self.get_logger().warn(f"예상치 못한 메시지: {msg.data}")
             return
