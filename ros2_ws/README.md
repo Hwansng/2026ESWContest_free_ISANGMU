@@ -77,6 +77,6 @@ ros2 launch hazardbot_dashboard hazardbot_patrol_demo.launch.py
 
 ## 문서
 
-- `docs/lerobot_verification.md` — LeRobot(ACT 정책 도구) 격리 venv 배포 검증 기록. `rpi_check.py --skip-cameras [--move-all]` 통과 확인, 실물 검증 중 `arm_controller`는 반드시 중지 필요(서보 버스 충돌 방지).
+- `docs/lerobot_verification.md` — LeRobot(ACT 정책 도구) 격리 venv 배포 검증 기록. 
 - `vision_node/DEPENDENCY_NOTES.md` — RPi5/Ubuntu 24.04/ROS2 Jazzy 환경에서 겪은 libcamera 이름 불일치, cv_bridge 패키지 누락, numpy 2.x ABI 충돌(`numpy<2` 고정으로 해결), OpenCV headless의 GUI 캘리브레이션 대체(Flask 웹 스트림) 이슈 기록.
 - `firmware_reference/AMR_state_v8_wifi.ino` — 실제 펌웨어가 아닌 참조용 안내 파일. AMR ESP32(MQ135 가스 + KY-026 화염)가 `<SENS,gas,flame,battCv,stateCode,actionCode,faultCode,checksum>` 프레임을 Wi-Fi TCP(port 5000)로 `amr_bridge`에 전송한다는 프로토콜 스펙만 기록되어 있고, 실제 구현은 별도 저장소에 있음.
