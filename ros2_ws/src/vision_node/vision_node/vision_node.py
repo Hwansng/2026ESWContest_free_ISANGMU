@@ -23,10 +23,10 @@ COLOR_TO_CLASS = {
     'yellow': ObjectClass.HANDLE_CARE,
 }
 
-# 형상 기대값 (실물 조달 후 재조정 필요 — 지금은 임시값)
+# 형상 기대값, 실물 조달 후 재조정 필요, 지금은 임시값
 EXPECTED_SHAPE = {
-    'red':    {'circularity_min': 0.0, 'circularity_max': 1.0},  # 강체, 형태 안정적
-    'yellow': {'circularity_min': 0.0, 'circularity_max': 1.0},  # 변형체, 폭넓게 허용
+    'red':    {'circularity_min': 0.0, 'circularity_max': 1.0},
+    'yellow': {'circularity_min': 0.0, 'circularity_max': 1.0},
 }
 
 
@@ -43,22 +43,25 @@ class VisionNode(Node):
 
         self.pub_vision = self.create_publisher(String, '/vision/detected', 10)
 
+        # 수정: hsv_separation_test.py로 실측한 값으로 교체함
+        # NoIR 카메라는 IR 차단 필터가 없어서 색이 밀리는 현상이 실제로 나타남
+        # 빨강이 일반적인 0-10/170-180 구간이 아니라 138-156(자주색 쪽)으로 완전히 이동함
+        # 겹침 판정 결과 H 채널 겹침 0.00으로 완전 분리 확인됨, 여유 마진 살짝 넣어서 반영함
         self.hsv_ranges = {
             'red': [
-                (np.array([0,   120, 70]),  np.array([10,  255, 255])),
-                (np.array([170, 120, 70]),  np.array([180, 255, 255])),
+                (np.array([133, 100, 60]), np.array([161, 255, 255])),
             ],
             'yellow': [
-                (np.array([20, 100, 100]), np.array([35, 255, 255])),
+                (np.array([3, 30, 100]), np.array([31, 255, 255])),
             ],
         }
 
-        # 🔴 프론트 카메라 ROI — 작업공간 높이로 제한 (바닥 오검출 차단)
+        # 프론트 카메라 ROI, 작업공간 높이로 제한해서 바닥 오검출 차단
         # 값은 실제 카메라 마운트 위치 확정 후 재조정 필요
-        self.roi_y_start_ratio = 0.3  # 화면 상단 30% 지점부터
-        self.roi_y_end_ratio = 0.8    # 화면 상단 80% 지점까지
+        self.roi_y_start_ratio = 0.3
+        self.roi_y_end_ratio = 0.8
 
-        self.get_logger().info('Vision Node 시작! (/camera/image_raw 구독 중)')
+        self.get_logger().info('Vision Node 시작함, /camera/image_raw 구독중')
 
     def image_cb(self, msg):
         try:
@@ -78,7 +81,6 @@ class VisionNode(Node):
                 ).start()
 
     def apply_roi(self, frame):
-        """작업공간 높이로 ROI 제한 — 바닥 영역 오검출 차단"""
         h, w = frame.shape[:2]
         y1 = int(h * self.roi_y_start_ratio)
         y2 = int(h * self.roi_y_end_ratio)
@@ -125,7 +127,6 @@ class VisionNode(Node):
 
                 aspect_ratio = round(max(w_box, h_box) / min(w_box, h_box), 2) if min(w_box, h_box) > 0 else 1.0
 
-                # ── 🆕 형상 특징값 (문서 §2-6) ──
                 perimeter = cv2.arcLength(largest, True)
                 fill_ratio = round(area / (w_box * h_box), 2) if (w_box * h_box) > 0 else 0.0
                 circularity = round(
@@ -134,7 +135,6 @@ class VisionNode(Node):
 
                 object_class = COLOR_TO_CLASS.get(color_name)
 
-                # ── 🆕 색·형상 불일치 시 소프트 모드 폴백 판정 ──
                 shape_ok = self.check_shape_consistency(color_name, circularity)
                 mode = 'NORMAL' if shape_ok else 'SOFT_FALLBACK'
 
@@ -148,7 +148,7 @@ class VisionNode(Node):
                     'circularity': circularity,
                     'mode': mode,
                     'center_x': round(center[0], 1),
-                    'center_y': round(center[1] + y_offset, 1),  # ROI 오프셋 복원
+                    'center_y': round(center[1] + y_offset, 1),
                 }
 
         if best_result:
@@ -157,15 +157,15 @@ class VisionNode(Node):
             self.pub_vision.publish(msg)
             self.get_logger().info(
                 f'감지: {best_result["color"]} ({best_result["object_class"]}) '
-                f'각도={best_result["angle"]}° 원형도={best_result["circularity"]} '
+                f'각도={best_result["angle"]}도 원형도={best_result["circularity"]} '
                 f'모드={best_result["mode"]}'
             )
         else:
             self.get_logger().debug('감지된 물체 없음')
 
     def check_shape_consistency(self, color_name, circularity):
-        """색상 기대 형상과 실측 형상이 크게 어긋나면 소프트 모드로 폴백
-        (임계값은 실물 조달 후 재조정 필요 — 지금은 항상 통과하도록 관대하게 설정)"""
+        """색상 기대 형상과 실측 형상이 크게 어긋나면 소프트 모드로 폴백함
+        임계값은 실물 조달 후 재조정 필요, 지금은 항상 통과하도록 관대하게 설정함"""
         expected = EXPECTED_SHAPE.get(color_name)
         if not expected:
             return True
