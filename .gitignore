@@ -1,11 +1,9 @@
 .claude/
 
-# 대용량 산출물 — 재생성 가능
-output/
-outputs/
-
-# 서드파티 매뉴얼
-*_QS_WAFFLE_Pi_*.pdf
+# ROS2 build artifacts
+ros2_ws/build/
+ros2_ws/install/
+ros2_ws/log/
 
 # Python
 __pycache__/

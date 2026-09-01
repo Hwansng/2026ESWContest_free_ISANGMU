@@ -1,3 +1,10 @@
+"""
+[레거시 — 현재 사용 안 함]
+초기 개발 단계 <CMD,VALUE,CS> XOR 체크섬 프로토콜 헬퍼임. 이건 아두이노
+펌웨어 시리얼 통신 프로토타입 시절 규약이고, 지금 vision_node.py는
+/vision/detected를 JSON 문자열로 발행함(json.dumps). 이 프로토콜은 안 씀.
+dummy_subscriber.py가 이걸 참조하는데, dummy_subscriber도 같이 레거시임.
+"""
 """<CMD,VALUE,CS> 프로토콜 헬퍼 (펌웨어 protocol.cpp와 동일 규약).
 
 vision_node가 /vision/detected로 내보내는 문자열과 dummy_subscriber의 검증이
@@ -28,8 +35,8 @@ def parse_message(line: str) -> tuple[str, str] | None:
     line = line.strip()
     if not line.startswith("<") or not line.endswith(">"):
         return None
-    body = line[1:-1]               # "CMD,VALUE,CS"
-    parts = body.rsplit(",", 1)     # 마지막 콤마 기준 분리 -> ["CMD,VALUE", "CS"]
+    body = line[1:-1]
+    parts = body.rsplit(",", 1)
     if len(parts) != 2:
         return None
     payload, cs_str = parts
@@ -37,7 +44,7 @@ def parse_message(line: str) -> tuple[str, str] | None:
         got = int(cs_str, 16)
     except ValueError:
         return None
-    if got != xor_checksum(payload):  # 체크섬 불일치 -> 폐기
+    if got != xor_checksum(payload):
         return None
     cmd, _, value = payload.partition(",")
     return cmd, value
