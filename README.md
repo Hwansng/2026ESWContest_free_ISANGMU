@@ -30,25 +30,33 @@
  | `Device` | `OS` | `Middleware` | `Else` |
  | --- | --- | --- | --- |
  | Raspberry Pi 5 (8GB) | Ubuntu 24.04 LTS | ROS2 Jazzy | OpenCV 4.x, Flask + WebSocket, rosbag |
- | ESP32 DevKit V1 #1 (AMR) | Arduino-ESP32 3.0 | FreeRTOS (듀얼 코어) | TB6612FNG, VL53L1X, MQ-2/135, MLX90614, KY-026, 5ch IR |
- | ESP32 DevKit V1 #2 (ARM) | Arduino-ESP32 3.0 | FreeRTOS (듀얼 코어) | Feetech STS3215 × 6 (UART2 1Mbps), NeoPixel, Buzzer |
+ | ESP32 DevKit V1 — **DRIVE** | Arduino-ESP32 3.0 | FreeRTOS (듀얼 코어) | TB6612FNG, VL53L1X, 5ch IR |
+ | ESP32 DevKit V1 — **ENV** | Arduino-ESP32 3.0 | FreeRTOS (듀얼 코어) | MQ-2/135, KY-026, NeoPixel, Buzzer |
+ | 학습·제어 PC (Windows 11) | — | LeRobot 0.4.4 | Feetech STS3215 × 12 (USB 반이중 어댑터), ACT |
 
  다음과 같은 개발환경에서 본 프로젝트를 진행한다. 모든 RPi 5 ↔ ESP32 통신은 Wi-Fi TCP 듀얼 채널이며, `<CMD,VALUE,...,CS>\n` 포맷에 XOR 8-bit 체크섬을 사용한다.
+
+ > **설계 변경 이력.** 초기 구상은 ESP32 한 대가 STS3215 를 UART2 로 직접 구동하는 것이었으나,
+ > STS3215 는 **1선 반이중** 버스라 마스터가 하나여야 한다. ESP32 를 서보 3핀 버스에 물리면
+ > 충돌이 난다. 현재는 **USB 반이중 어댑터 하나**를 마스터로 두고 PC 의 LeRobot 이 양팔을 제어한다.
+ > 보드 호칭도 `#1`·`#2` 번호가 문서마다 반대를 가리켜 **DRIVE / ENV** 로 통일했다.
+ > 근거와 절차는 [`firmware/docs/센서_지도.md`](firmware/docs/센서_지도.md) 와
+ > [`docs/schedule/`](docs/schedule/) 의 로봇암 구축기록 참조.
 
  ---
  # ➕ Hardware
 
  | 분류 | 부품 | 용도 |
  | --- | --- | --- |
- | MCU #1 | ESP32 DevKit V1 | AMR · 5종 센서 · DC 모터 · 라인트레이싱 |
- | MCU #2 | ESP32 DevKit V1 | STS3215 6축 UART 제어 · NeoPixel · 부저 |
+ | MCU — DRIVE | ESP32 DevKit V1 | DC 모터 · 라인트레이싱 · VL53L1X · **모터 정지 단독 권한** |
+ | MCU — ENV | ESP32 DevKit V1 | 가스·화염 환경 감시 · NeoPixel · 부저 |
  | SBC | Raspberry Pi 5 (8GB) | ROS2 Jazzy + OpenCV + 대시보드 |
  | 모터 드라이버 | TB6612FNG | DC 모터 (MOSFET, 효율 95%+) |
  | DC 모터 | JGA25-371 12V | 2WD 차동 구동 (334rpm) |
- | 서보 | Feetech STS3215 × 6 | 6DOF 직렬 버스 데이지 체인 (12-bit, 30kg·cm) |
+ | 서보 | Feetech STS3215 × 12 | 리더·팔로워 양팔 6DOF. 1선 반이중 버스, 마스터는 USB 어댑터 하나 (12-bit, 30kg·cm) |
  | 거리 센서 | VL53L1X (ToF) | 정면 장애물 · APPROACH 트리거 |
  | 가스 센서 | MQ-2, MQ-135 | 비율 분석 가스 유형 추정 |
- | 온도 센서 | MLX90614 | 비접촉 IR 온도 |
+ | ~~온도 센서~~ | ~~MLX90614~~ | **미채택** — 근거는 `firmware/docs/센서_지도.md` |
  | 화염 센서 | KY-026 | 화염 감지 (즉시 정지) |
  | 라인 센서 | 5채널 IR 라인센서 | 라인트레이싱 PID + 이탈 감지 |
  | 프레임 | SO-ARM101 (3D 출력) | LeRobot 오픈소스 STL 자체 제작 |
@@ -66,19 +74,24 @@
 ```
 1. Wi-Fi 라우터 부팅 + 양쪽 ESP32 시리얼 포트(COMx) 확인
 
-2. ESP32 #1 (AMR) 펌웨어 업로드:
-   Arduino IDE → firmware/esp32_amr/esp32_amr.ino 열기
+2. DRIVE 보드 펌웨어 업로드:
+   Arduino IDE → firmware/esp32_drive/esp32_line_pid/esp32_line_pid.ino 열기
    Tools → Board: "ESP32 Dev Module" → Port 선택 → Upload
 
-3. ESP32 #2 (ARM) 펌웨어 업로드:
-   Arduino IDE → firmware/esp32_arm/arm_firmware/arm_firmware.ino 열기
+3. ENV 보드 펌웨어 업로드:
+   ※ ENV 스케치는 이 저장소에 없다 (강희 로컬). 배선·핀 정본만 있다:
+     firmware/docs/amr_v9_4sensor_*_배선_가이드.md · firmware/docs/배선_확정_2026-08-14.md
    Tools → Board: "ESP32 Dev Module" → Port 선택 → Upload
+
+   ※ 로봇암은 ESP32 가 아니라 PC 에서 제어한다 (1선 반이중, 마스터 하나):
+      conda activate lerobot
+      powershell arm/scripts/teleop.ps1 -LeaderPort COMx -FollowerPort COMy
 
 4. RPi 5에서 ROS2 워크스페이스 빌드 및 실행:
    cd ros2_ws
    colcon build --symlink-install
    source install/setup.bash
-   ros2 launch hazardbot_bringup mission.launch.py
+   ros2 launch hazardbot_dashboard hazardbot.launch.py
 
 5. 관제 대시보드 접속:
    브라우저에서 http://<RPi5_IP>:8080 접속
@@ -88,49 +101,55 @@
  ---
  # ➕ Source code
 
- ## 📝 AMR Firmware (ESP32 #1)
- 펌웨어: [firmware/esp32_amr/esp32_amr.ino](firmware/esp32_amr/esp32_amr.ino)
+ ## 📝 DRIVE Firmware
+ 스케치: [`firmware/esp32_drive/`](firmware/esp32_drive/) · 배선·확정값 정본: [`firmware/docs/README.md`](firmware/docs/README.md)
  <br>
 
- `5종 센서 수집 · 위험 상태 판정 · 모터 PID · 라인트레이싱 · LiPo 모니터링`
+ `라인 추종 PD · 전압 피드포워드 · ToF 논블로킹 · 모터 정지 단독 권한`
 
   <details>
   <summary>알고리즘 설명 (요약)</summary>
 
 ```
-① MQ-135 가스 센서와 KY-026 불꽃 센서를 이용해 SAFE / WARNING / DANGER 상태를 판정한다.
+① 라인 추종 PD 루프 — 5채널 TCRT5000(검정 = HIGH), KP=60 · KD=25 · 주기 20ms.
 
-② Moving Average: MQ-135 값의 순간 노이즈를 줄이기 위해 최근 SAMPLE_COUNT개 평균을 사용한다.
+② 전압 피드포워드 — 실제듀티 = 목표듀티 × (12.0 / 측정전압).
+   배터리 전압이 내려가도 같은 속도를 낸다. 엔코더 속도 루프를 대체한 방식이다.
 
-③ Persistence Filter: 위험 조건이 DANGER_COUNT_THRESHOLD 이상 연속 감지될 때만 DANGER로 판정한다. 한 번 튄 값은 즉시 DANGER로 보지 않는다.
+③ VL53L1X 는 논블로킹으로 읽는다. 블로킹으로 읽으면 라인 PID 주기(20ms)가 무너진다.
+   정지 판정 임계는 300mm 단일 고정이다 (구간별 전환 · 마커 기반 전환은 폐기).
 
-④ Event-based State Message: 상태가 바뀌는 순간에만 RPi 5로 메시지를 송신한다.
+④ 후진은 개루프 직선이다. 라인센서가 전방에 있어 이 하드웨어로 후진 라인 추종은
+   제어적으로 불가능하다.
 
-⑤ XOR Checksum: 메시지 본문(CMD,VALUE)을 문자 단위로 XOR하여 체크섬을 생성한다. 수신 측이 데이터 무결성을 확인할 수 있도록 16진수 2자리로 부착한다.
+⑤ 정지 권한 — 모터를 멈추는 것은 DRIVE 뿐이다. RPi·ENV 는 정지를 요청할 뿐 직접 끊지 않는다.
+   STBY 10kΩ 풀다운으로 ESP32 가 죽거나 리셋되면 G4 가 하이임피던스가 되어 모터가 자동 정지한다.
 
-⑥ Message Format: <CMD,VALUE,CS>  예) <STATE,DANGER,5A>
+⑥ 하트비트 — 정지는 STOP 명령이 아니라 생존 신호로 건다.
+   RPi 사망 · WiFi 두절 · ENV 사망을 하나의 메커니즘으로 잡기 위해서다.
 
-⑦ FreeRTOS 듀얼 코어:
-   - Core 0: Wi-Fi TCP (RPi 5 통신)
-   - Core 1: 센서 읽기 + 모터 PID + 라인트레이싱
+⑦ Message Format: <CMD,VALUE,CS>  예) <BUZZ,1>  — XOR 8-bit 체크섬, 16진수 2자리
 ```
   </details>
 
- ## 📝 ARM Firmware (ESP32 #2) — 컴플라이언스 파지
- 펌웨어: [firmware/esp32_arm/arm_firmware/arm_firmware.ino](firmware/esp32_arm/arm_firmware/arm_firmware.ino)
+ ## 📝 ARM 제어 (PC · LeRobot) — 컴플라이언스 파지
+ 도구: [`arm/tools/`](arm/tools/) · 실행기: [`arm/scripts/teleop.ps1`](arm/scripts/teleop.ps1)
  <br>
 
- `STS3215 6축 데이지 체인 제어 · 실시간 Load 센싱 · 적응형 파지`
+ `STS3215 양팔 12축 반이중 버스 제어 · 실시간 Load 센싱 · 적응형 파지`
 
   <details>
   <summary>알고리즘 설명 (요약)</summary>
 
 ```
-① UART2(GPIO 16/17, 1Mbps)로 Feetech STS3215 서보 6개를 데이지 체인 제어한다. 12-bit 마그네틱 엔코더로 0.088° 절대 위치 피드백을 받는다.
+① USB 반이중 어댑터 하나를 마스터로 두고 Feetech STS3215 를 제어한다.
+   STS3215 는 1선 반이중이라 마스터가 둘일 수 없다 — ESP32 를 서보 3핀 버스에 연결하지 않는다.
+   12-bit 마그네틱 엔코더로 0.088° 절대 위치 피드백을 받는다.
 
-② FreeRTOS 듀얼 코어 분리:
-   - Core 0: Wi-Fi TCP (RPi 5와 명령/피드백 송수신)
-   - Core 1: STS3215 서보 태스크 (10ms 폴링, vTaskDelayUntil로 지터 최소화)
+② 리더·팔로워 텔레옵 (LeRobot 0.4.4 · Windows 11):
+   - 리더 6축은 XL4015 7.4V 강압 레일, 팔로워 6축은 12V 직결
+   - 60Hz / 60초 무결 (관문 G2 Exit 충족)
+   - 정렬 확인을 선행하고, 실패하면 텔레옵을 시작하지 않는다
 
 ③ Compliance Grip: 실시간으로 그리퍼 서보의 Load 값을 모니터링한다.
    - 소프트 한계 (Load 40%): 재시도. 그리퍼 위치 +5mm offset 후 재폐쇄.
@@ -139,7 +158,10 @@
 
 ④ Servo Feedback Cycle: 6축을 라운드 로빈으로 매 10ms마다 1축씩 위치/부하/온도를 읽어 RPi 5로 퍼블리시한다. 평균 60Hz 텔레메트리.
 
-⑤ Fault Isolation: ESP32 #1(AMR) 장애 시 RPi 5의 STOP 명령으로 즉시 토크 OFF하여 암이 낙하하지 않도록 한다.
+⑤ Fault Isolation — 4계층 정지 체계. 모터를 멈추는 것은 DRIVE 뿐이다.
+   하드웨어 풀다운(STBY 10kΩ) / DRIVE 로컬 / RPi / 사람 순으로 겹쳐 둔다.
+   정지는 STOP 명령이 아니라 하트비트(생존 신호)로 건다 —
+   RPi 사망 · WiFi 두절 · ENV 사망을 하나의 메커니즘으로 잡기 위해서다.
 ```
   </details>
 
@@ -175,18 +197,28 @@
 ```
 HazardBot-2026/
 ├── .github/workflows/    # CI (Arduino 컴파일 · ROS2 colcon build)
+├── arm/                  # 로봇암 · ACT (PC 측)
+│   ├── tools/            # STS3215 제어·진단 도구 13종
+│   ├── act/              # ACT 수집·검수 도구 6종
+│   ├── calibration/      # 캘리브레이션 정본 4개 + 백업·복원 절차
+│   ├── scripts/          # teleop.ps1 · record_act.ps1
+│   └── tests/            # ACT 수집 테스트 3종
 ├── docs/
-│   ├── architecture.md   # 시스템 아키텍처 다이어그램
-│   └── contributing.md   # 협업 가이드 (브랜치 전략 · PR 프로세스)
+│   ├── architecture.md   # 시스템 아키텍처 · 통신 · 판정 로직
+│   ├── contributing.md   # 협업 가이드 (브랜치 전략 · PR 프로세스)
+│   ├── schedule/         # 합동 작업일정 · 13주 공정표 · 로봇암 구축기록
+│   ├── act/              # ACT 수집 설계 · 구현 계획
+│   ├── scenario/         # 시나리오 · 시연장 배치 · 영상 구성
+│   ├── power/            # 전력 계통
+│   └── handover/         # 역할별 담당정리 · 팀 회신
 ├── firmware/
-│   ├── esp32_amr/        # ESP32 #1 펌웨어 (AMR · 센서 · 라인트레이싱)
-│   └── esp32_arm/
-│       └── arm_firmware/ # ESP32 #2 펌웨어 (STS3215 6DOF 제어)
-├── hardware/
-│   └── stl/              # SO-ARM101 프레임 STL
-├── ros2_ws/
-│   └── src/
-│       └── vision_node/  # ROS2 비전 패키지 (RPi 5)
+│   ├── esp32_drive/      # DRIVE 주행 스케치 4종 (bringup · line · PID · OTA)
+│   ├── sts3215/          # 서보 버스 점검 · ID 부여
+│   └── docs/             # 센서 지도 · 구역 마커 설계 · 배선 가이드
+├── hardware/             # 출력에 쓴 STL 3종 (리더암 · 팔로워암 · Waffle 플레이트)
+├── ros2_ws/              # ROS2 패키지 (RPi 5)
+├── tools/                # rpi_check.py · ros2_ws_sync.ps1
+├── archive/              # 폐기된 설계 (ESP32-서보 직결) · 로봇암 초기 계획
 └── README.md
 ```
 
