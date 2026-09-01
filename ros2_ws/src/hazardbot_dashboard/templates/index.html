@@ -46,7 +46,6 @@
             padding-bottom: 8px;
         }
 
-        /* 미션 상태 */
         .state-badge {
             display: inline-block;
             padding: 8px 16px;
@@ -58,36 +57,12 @@
         .state-IDLE      { background:#333; color:#aaa; }
         .state-PATROL    { background:#004400; color:#00ff88; }
         .state-DETECTED  { background:#444400; color:#ffff00; }
+        .state-APPROACH  { background:#004444; color:#00ffff; }
+        .state-GRIP      { background:#004488; color:#4488ff; }
+        .state-TRANSPORT { background:#440044; color:#ff44ff; }
+        .state-ISOLATE   { background:#004488; color:#44aaff; }
         .state-EMERGENCY { background:#440000; color:#ff4444; }
 
-        /* 위험물체 판정 문장 */
-        .verdict-color-red    { color: #ff4444; }
-        .verdict-color-yellow { color: #ffdd00; }
-        .verdict-sentence {
-            font-size: 15px;
-            line-height: 1.5;
-            margin-top: 10px;
-            padding: 10px;
-            background: #111;
-            border-radius: 4px;
-            min-height: 44px;
-        }
-        .verdict-none { color: #555; }
-
-        /* GAS_CHECK 결과 */
-        .gas-result-badge {
-            display: inline-block;
-            padding: 4px 10px;
-            border-radius: 4px;
-            font-weight: bold;
-            font-size: 13px;
-        }
-        .gas-DETECTED { background:#440000; color:#ff4444; }
-        .gas-CLEAR    { background:#004400; color:#00ff88; }
-        .gas-ERROR    { background:#444400; color:#ffff00; }
-        .gas-none     { background:#222; color:#666; }
-
-        /* 위험 등급 */
         .level-badge {
             font-size: 36px;
             font-weight: bold;
@@ -99,7 +74,6 @@
         .level-2 { color: #ff8800; }
         .level-3 { color: #ff0000; }
 
-        /* 센서값 */
         .sensor-row {
             display: flex;
             justify-content: space-between;
@@ -110,7 +84,6 @@
         .sensor-row .label { color: #888; }
         .sensor-row .value { color: #fff; font-weight: bold; }
 
-        /* RPi 헬스 */
         .health-temp {
             font-size: 32px;
             font-weight: bold;
@@ -120,7 +93,6 @@
         .temp-warn { color: #ffff00; }
         .temp-hot  { color: #ff4444; }
 
-        /* 연결 상태 */
         .conn-dot {
             display: inline-block;
             width: 10px; height: 10px;
@@ -130,7 +102,6 @@
         .conn-ok   { background: #00ff88; }
         .conn-fail { background: #ff4444; }
 
-        /* 배터리 */
         .battery-bar {
             height: 20px;
             background: #222;
@@ -159,44 +130,11 @@
             </div>
         </div>
 
-        <!-- 위험물체 판정 -->
-        <div class="card" style="grid-column: span 2">
-            <h3>위험물체 판정</h3>
-            <div style="display:flex; align-items:center; gap:16px;">
-                <div id="hazard-level" class="level-badge level-0">L0</div>
-                <div>
-                    <div id="hazard-type" style="color:#888; font-size:12px">NORMAL</div>
-                    <div id="hazard-color-badge" style="font-size:12px; margin-top:2px"></div>
-                </div>
-            </div>
-            <div id="hazard-sentence" class="verdict-sentence verdict-none">
-                아직 판정된 물체가 없습니다.
-            </div>
-        </div>
-
-        <!-- 가스 정밀검사 (GAS_CHECK, v11) -->
+        <!-- 위험 등급 -->
         <div class="card">
-            <h3>가스 정밀검사 (GAS_CHECK)</h3>
-            <div class="sensor-row">
-                <span class="label">대상 구역</span>
-                <span class="value" id="gas-zone">-</span>
-            </div>
-            <div class="sensor-row">
-                <span class="label">판정</span>
-                <span class="value"><span id="gas-result" class="gas-result-badge gas-none">대기중</span></span>
-            </div>
-            <div class="sensor-row">
-                <span class="label">baseline</span>
-                <span class="value" id="gas-baseline">-</span>
-            </div>
-            <div class="sensor-row">
-                <span class="label">최저 원시값</span>
-                <span class="value" id="gas-minraw">-</span>
-            </div>
-            <div class="sensor-row">
-                <span class="label">약화율</span>
-                <span class="value"><span id="gas-weakpct">-</span>%</span>
-            </div>
+            <h3>HAZARD LEVEL</h3>
+            <div id="hazard-level" class="level-badge level-0">L0</div>
+            <div id="hazard-type" style="color:#888; font-size:12px; margin-top:4px">NORMAL</div>
         </div>
 
         <!-- RPi5 헬스 -->
@@ -208,28 +146,16 @@
             </div>
         </div>
 
-        <!-- 센서 데이터 -->
+        <!-- 연결 상태, 신규 추가 -->
         <div class="card">
-            <h3>SENSORS</h3>
+            <h3>CONNECTION</h3>
             <div class="sensor-row">
-                <span class="label">거리 (VL53L1X)</span>
-                <span class="value"><span id="dist">0</span> mm</span>
+                <span class="label"><span id="amr-dot" class="conn-dot conn-fail"></span>AMR ESP32</span>
+                <span class="value" id="amr-status">미연결</span>
             </div>
             <div class="sensor-row">
-                <span class="label">MQ-2 (가연성)</span>
-                <span class="value"><span id="mq2">0</span> ppm</span>
-            </div>
-            <div class="sensor-row">
-                <span class="label">MQ-135 (VOC)</span>
-                <span class="value"><span id="mq135">0</span> ppm</span>
-            </div>
-            <div class="sensor-row">
-                <span class="label">온도</span>
-                <span class="value"><span id="temp">0</span> °C</span>
-            </div>
-            <div class="sensor-row">
-                <span class="label">화염</span>
-                <span class="value" id="flame">없음</span>
+                <span class="label"><span id="arm-dot" class="conn-dot conn-fail"></span>ARM ESP32</span>
+                <span class="value" id="arm-status">미연결</span>
             </div>
         </div>
 
@@ -254,24 +180,20 @@
         <div class="card">
             <h3>BATTERY</h3>
             <div style="font-size:28px; font-weight:bold; color:#00ff88">
-                <span id="battery-v">0.0</span> V
+                <span id="battery-v">-</span> V
             </div>
             <div class="battery-bar">
                 <div id="battery-fill" class="battery-fill"
-                     style="width:0%; background:#00ff88"></div>
+                     style="width:0%; background:#555"></div>
             </div>
             <div style="font-size:12px; color:#888; margin-top:4px">
-                <span id="battery-pct">0</span>%
+                <span id="battery-pct">-</span>%
             </div>
         </div>
 
         <!-- ENV 보드 상태 -->
         <div class="card">
             <h3>ENV BOARD (sensor_bridge)</h3>
-            <div class="sensor-row">
-                <span class="label">MQ-135(원시값)</span>
-                <span class="value" id="env-mq135">0</span>
-            </div>
             <div class="sensor-row">
                 <span class="label">MQ-2(원시값)</span>
                 <span class="value" id="env-mq2">0</span>
@@ -281,12 +203,8 @@
                 <span class="value" id="env-flame">없음</span>
             </div>
             <div class="sensor-row">
-                <span class="label">거리</span>
-                <span class="value" id="env-distance">-</span>
-            </div>
-            <div class="sensor-row">
                 <span class="label">배터리</span>
-                <span class="value"><span id="env-battery">0.0</span> V</span>
+                <span class="value"><span id="env-battery">-</span> V</span>
             </div>
             <div class="sensor-row">
                 <span class="label">상태</span>
@@ -298,7 +216,7 @@
             </div>
         </div>
 
-        <!-- 이벤트 로그 -->
+        <!-- 이벤트 로그, ENV BOARD 옆에 비전+배터리 합친 폭(2칸)으로 배치 -->
         <div class="card" style="grid-column: span 2">
             <h3>EVENT LOG</h3>
             <div id="event-log"
@@ -306,18 +224,12 @@
                         overflow-y:auto; line-height:1.6">
             </div>
         </div>
-        <!-- 카메라 영상 -->
-        <div class="card" style="grid-column: span 3">
-            <h3>CAMERA (OpenCV)</h3>
-            <img src="/video"
-                style="width:100%; border-radius:4px;"
-                onerror="this.style.display='none'">
-        </div>
     </div>
 
     <script>
         const socket = io();
         const log = document.getElementById('event-log');
+        let lastDetectionKey = null; // 물체 감지 로그 중복 방지용
 
         function addLog(msg) {
             const time = new Date().toLocaleTimeString();
@@ -332,7 +244,6 @@
             stateEl.textContent = data.mission_state;
             stateEl.className = `state-badge state-${data.mission_state}`;
 
-            // 구역 표시 이름
             document.getElementById('zone-display').textContent =
                 data.zone_display || '알수없음';
 
@@ -344,59 +255,44 @@
             document.getElementById('hazard-type').textContent =
                 data.hazard.type || 'NORMAL';
 
-            const hColorBadge = document.getElementById('hazard-color-badge');
-            const hColor = data.hazard.color;
-            if (hColor === 'red') {
-                hColorBadge.textContent = '● 빨강 물체';
-                hColorBadge.className = 'verdict-color-red';
-            } else if (hColor === 'yellow') {
-                hColorBadge.textContent = '● 노랑 물체';
-                hColorBadge.className = 'verdict-color-yellow';
-            } else {
-                hColorBadge.textContent = '';
-            }
-
-            const hSentence = document.getElementById('hazard-sentence');
-            if (data.hazard.detail) {
-                hSentence.textContent = data.hazard.detail;
-                hSentence.classList.remove('verdict-none');
-            } else {
-                hSentence.textContent = '아직 판정된 물체가 없습니다.';
-                hSentence.classList.add('verdict-none');
-            }
-
-            // 센서
-            document.getElementById('dist').textContent =
-                data.sensors.dist_mm || 0;
-            document.getElementById('mq2').textContent =
-                data.gas.mq2 || 0;
-            document.getElementById('mq135').textContent =
-                data.gas.mq135 || 0;
-            document.getElementById('temp').textContent =
-                data.temp.temp || 0;
-            document.getElementById('flame').textContent =
-                data.temp.flame ? '🔥 감지!' : '없음';
-            document.getElementById('flame').style.color =
-                data.temp.flame ? '#ff4444' : '#00ff88';
-
             // 비전
             document.getElementById('vision-color').textContent =
                 data.vision.color || '-';
             document.getElementById('vision-angle').textContent =
                 data.vision.angle || '-';
 
-            // 배터리
+            // 물체 감지 판정 로그 — 색상/가스감지 조합이 바뀔 때만 한 번 찍음
+            const vColor = data.vision && data.vision.color;
+            const gasDetected = !!(data.hazard && data.hazard.level > 0);
+
+            let detectionKey = null;
+            let detectionMsg = null;
+            if (vColor === 'yellow') {
+                detectionKey = 'yellow';
+                detectionMsg = '황색 산화성 고체 감지 — 취급구역 내 위치 자체가 위반';
+            } else if (vColor === 'red') {
+                detectionKey = gasDetected ? 'red-gas' : 'red-nogas';
+                detectionMsg = gasDetected
+                    ? '적색 물질 — 가스 감지(zone=P1 또는 P2). 격납 파손'
+                    : '적색 물질 — 가스 없음(zone=P1 또는 P2). 격납 유지, 통과';
+            }
+
+            if (detectionKey && detectionKey !== lastDetectionKey) {
+                addLog(detectionMsg);
+            }
+            lastDetectionKey = detectionKey;
+
+            // 배터리 (AMR 실측치: data.battery, feat의 amr_bridge_node.py가 /amr/battery로 발행)
             const volt = data.battery || 0;
             const pct  = Math.max(0, Math.min(100,
                 ((volt - 9.9) / (12.6 - 9.9)) * 100
             )).toFixed(0);
-            document.getElementById('battery-v').textContent =
-                volt.toFixed(1);
+            document.getElementById('battery-v').textContent = volt.toFixed(1);
             document.getElementById('battery-pct').textContent = pct;
             const fill = document.getElementById('battery-fill');
             fill.style.width = pct + '%';
             fill.style.background = pct > 50 ? '#00ff88' :
-                                    pct > 20 ? '#ffff00' : '#ff4444';
+                                     pct > 20 ? '#ffff00' : '#ff4444';
 
             // RPi5 헬스
             const cpuTemp = data.rpi_health.cpu_temp || 0;
@@ -410,40 +306,38 @@
             thrEl.textContent = throttled;
             thrEl.style.color = throttled === '0x0' ? '#00ff88' : '#ff4444';
 
-            // GAS_CHECK 결과 (v11)
-            const gr = data.env_gas_result || {};
-            document.getElementById('gas-zone').textContent = gr.zone || '-';
-            const grEl = document.getElementById('gas-result');
-            if (gr.result) {
-                const labels = {DETECTED: '🔴 검출 — 위험', CLEAR: '🟢 정상 — 통과', ERROR: '🟡 오류 — 판정 보류'};
-                grEl.textContent = labels[gr.result] || gr.result;
-                grEl.className = 'gas-result-badge gas-' + gr.result;
-            } else {
-                grEl.textContent = '대기중';
-                grEl.className = 'gas-result-badge gas-none';
-            }
-            document.getElementById('gas-baseline').textContent =
-                (gr.baseline === undefined || gr.baseline === null) ? '-' : gr.baseline;
-            document.getElementById('gas-minraw').textContent =
-                (gr.minimum_raw === undefined || gr.minimum_raw === null) ? '-' : gr.minimum_raw;
-            document.getElementById('gas-weakpct').textContent =
-                (gr.weak_percent === undefined || gr.weak_percent === null) ? '-' : gr.weak_percent;
+            // 연결 상태, 신규
+            // 주의: 현재 feat 쪽 amr_bridge_node.py / arm 노드는 /amr/connected, /arm/connected를
+            // 발행하지 않음 — dashboard_node.py의 amr_connected/arm_connected는 항상 기본값(False)이라
+            // 이 카드는 지금 백엔드에 연결상태 퍼블리셔가 추가되기 전까지는 "미연결" 고정으로 보일 수 있음.
+            const amrOk = !!data.amr_connected;
+            document.getElementById('amr-dot').className =
+                'conn-dot ' + (amrOk ? 'conn-ok' : 'conn-fail');
+            document.getElementById('amr-status').textContent =
+                amrOk ? '연결됨' : '미연결';
+
+            const armOk = !!data.arm_connected;
+            document.getElementById('arm-dot').className =
+                'conn-dot ' + (armOk ? 'conn-ok' : 'conn-fail');
+            document.getElementById('arm-status').textContent =
+                armOk ? '연결됨' : '미연결';
 
             // ENV 보드
-            const mq135 = (data.env_gas && data.env_gas.mq135) || 0;
+            // 호환성 수정: feat 쪽 sensor_bridge_node.py는 화염 데이터를 /env/flame이 아니라
+            // /env/temp 토픽으로 발행함 (dashboard_node.py의 env_temp_cb -> data.env_temp).
+            // 그래서 data.env_flame이 아니라 data.env_temp.flame을 읽어야 함.
             const mq2 = (data.env_gas && data.env_gas.mq2) || 0;
 
-            document.getElementById('env-mq135').textContent = mq135;
             document.getElementById('env-mq2').textContent = mq2;
             document.getElementById('env-flame').textContent =
                 (data.env_temp && data.env_temp.flame) ? '🔥 감지!' : '없음';
+            document.getElementById('env-flame').style.color =
+                (data.env_temp && data.env_temp.flame) ? '#ff4444' : '#00ff88';
 
-            const dist = data.env_distance && data.env_distance.distance_mm;
-            document.getElementById('env-distance').textContent =
-                (dist === null || dist === undefined) ? '측정실패' : dist + 'mm';
-
+            // ENV 보드 배터리 실측치 (data.env_battery, sensor_bridge_node.py가 /env/battery로 발행)
             document.getElementById('env-battery').textContent =
                 (data.env_battery || 0).toFixed(1);
+
             document.getElementById('env-state').textContent =
                 (data.env_state && data.env_state.state) || '-';
             document.getElementById('env-fault').textContent =
@@ -453,7 +347,7 @@
         socket.on('connect', () => addLog('대시보드 연결됨'));
         socket.on('disconnect', () => addLog('연결 끊김'));
 
-        addLog('HazardBot Dashboard 시작!');
+        addLog('HazardBot Dashboard 시작');
     </script>
 </body>
 </html>
