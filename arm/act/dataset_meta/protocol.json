@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "seed": 20260816,
+  "repo_id": "local/hazardbot_red_yellow_act_v1",
+  "task": "Pick up the hazardous object, place it in the isolation bin, and close the lid.",
+  "fps": 30,
+  "image_key": "observation.images.wrist",
+  "total_episodes": 100,
+  "episode_time_s": 35,
+  "reset_time_s": 60
+}
