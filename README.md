@@ -40,8 +40,8 @@
  > STS3215 는 **1선 반이중** 버스라 마스터가 하나여야 한다. ESP32 를 서보 3핀 버스에 물리면
  > 충돌이 난다. 현재는 **USB 반이중 어댑터 하나**를 마스터로 두고 PC 의 LeRobot 이 양팔을 제어한다.
  > 보드 호칭도 `#1`·`#2` 번호가 문서마다 반대를 가리켜 **DRIVE / ENV** 로 통일했다.
- > 근거와 절차는 [`firmware/docs/센서_지도.md`](firmware/docs/센서_지도.md) 와
- > [`docs/schedule/`](docs/schedule/) 의 로봇암 구축기록 참조.
+ > 근거와 절차는 [`docs/06_firmware/센서_지도.md`](docs/06_firmware/센서_지도.md) 와
+ > [`docs/05_arm/로봇암_구축기록.md`](docs/05_arm/로봇암_구축기록.md) 참조.
 
  ---
  # ➕ Hardware
@@ -56,7 +56,7 @@
  | 서보 | Feetech STS3215 × 12 | 리더·팔로워 양팔 6DOF. 1선 반이중 버스, 마스터는 USB 어댑터 하나 (12-bit, 30kg·cm) |
  | 거리 센서 | VL53L1X (ToF) | 정면 장애물 · APPROACH 트리거 |
  | 가스 센서 | MQ-2, MQ-135 | 비율 분석 가스 유형 추정 |
- | ~~온도 센서~~ | ~~MLX90614~~ | **미채택** — 근거는 `firmware/docs/센서_지도.md` |
+ | ~~온도 센서~~ | ~~MLX90614~~ | **미채택** — 근거는 `docs/06_firmware/센서_지도.md` |
  | 화염 센서 | KY-026 | 화염 감지 (즉시 정지) |
  | 라인 센서 | 5채널 IR 라인센서 | 라인트레이싱 PID + 이탈 감지 |
  | 프레임 | SO-ARM101 (3D 출력) | LeRobot 오픈소스 STL 자체 제작 |
@@ -79,9 +79,11 @@
    Tools → Board: "ESP32 Dev Module" → Port 선택 → Upload
 
 3. ENV 보드 펌웨어 업로드:
-   ※ ENV 스케치는 이 저장소에 없다 (강희 로컬). 배선·핀 정본만 있다:
-     firmware/docs/amr_v9_4sensor_*_배선_가이드.md · firmware/docs/배선_확정_2026-08-14.md
+   먼저 firmware/esp32_env/libraries/AMRDemoScenarioLogic/ 를 Arduino/libraries/ 에 복사
+   그리고 wifi_secrets.example.h 를 wifi_secrets.h 로 복사해 SSID/비밀번호를 채운다
+   Arduino IDE → firmware/esp32_env/AMR_state_v11_ino/AMR_state_v11_ino.ino 열기
    Tools → Board: "ESP32 Dev Module" → Port 선택 → Upload
+   ※ 자세한 절차는 firmware/esp32_env/README.md
 
    ※ 로봇암은 ESP32 가 아니라 PC 에서 제어한다 (1선 반이중, 마스터 하나):
       conda activate lerobot
@@ -102,7 +104,7 @@
  # ➕ Source code
 
  ## 📝 DRIVE Firmware
- 스케치: [`firmware/esp32_drive/`](firmware/esp32_drive/) · 배선·확정값 정본: [`firmware/docs/README.md`](firmware/docs/README.md)
+ 스케치: [`firmware/esp32_drive/`](firmware/esp32_drive/) · 배선·확정값 정본: [`docs/06_firmware/README.md`](docs/06_firmware/README.md)
  <br>
 
  `라인 추종 PD · 전압 피드포워드 · ToF 논블로킹 · 모터 정지 단독 권한`
@@ -198,27 +200,34 @@
 HazardBot-2026/
 ├── .github/workflows/    # CI (Arduino 컴파일 · ROS2 colcon build)
 ├── arm/                  # 로봇암 · ACT (PC 측)
-│   ├── tools/            # STS3215 제어·진단 도구 13종
-│   ├── act/              # ACT 수집·검수 도구 6종
+│   ├── tools/            # STS3215 제어·진단 도구 17종
+│   ├── act/              # ACT 수집·검수 도구 + dataset_meta/ (100 에피소드 메타)
 │   ├── calibration/      # 캘리브레이션 정본 4개 + 백업·복원 절차
-│   ├── scripts/          # teleop.ps1 · record_act.ps1
+│   ├── scripts/          # teleop.ps1 · record_act.ps1 · rollout_act.ps1
 │   └── tests/            # ACT 수집 테스트 3종
 ├── docs/
 │   ├── architecture.md   # 시스템 아키텍처 · 통신 · 판정 로직
 │   ├── contributing.md   # 협업 가이드 (브랜치 전략 · PR 프로세스)
-│   ├── schedule/         # 합동 작업일정 · 13주 공정표 · 로봇암 구축기록
-│   ├── act/              # ACT 수집 설계 · 구현 계획
-│   ├── scenario/         # 시나리오 · 시연장 배치 · 영상 구성
-│   ├── power/            # 전력 계통
-│   └── handover/         # 역할별 담당정리 · 팀 회신
+│   ├── 01_plan/          # 계획 변경·개선안 · 시나리오 산업기준 재정의
+│   ├── 02_schedule/      # 합동 작업일정 · 13주 공정표 · 역할별 담당정리 · 인계
+│   ├── 03_scenario_demo/ # 시나리오 확정 · 시연장 배치 · 영상 구성
+│   ├── 04_act/           # ACT 수집 설계 · 구현 계획 · 수집 작업기록
+│   ├── 05_arm/           # 로봇암 구축기록 · 카메라 구성 · GPU 오프로드 기록
+│   ├── 06_firmware/      # 핀 배정·배선 정본 · 센서 지도 · 구역 마커 · 전력 계통
+│   ├── 07_ros2/          # lerobot 검증
+│   ├── 08_reference/     # 납땜 설명서 · 시스템 구조 정리 (PDF)
+│   └── 10_env_design/    # ENV·전력·구동부 설계 근거 (강희)
 ├── firmware/
-│   ├── esp32_drive/      # DRIVE 주행 스케치 4종 (bringup · line · PID · OTA)
+│   ├── esp32_drive/      # DRIVE 주행 스케치 6종 (bringup · line · PID · OTA · TCP · motor)
+│   ├── esp32_env/        # ENV 환경감시 스케치 (v11 정본 · v9 참고) + 자체 라이브러리
 │   ├── sts3215/          # 서보 버스 점검 · ID 부여
-│   └── docs/             # 센서 지도 · 구역 마커 설계 · 배선 가이드
+│   ├── tools/            # ENV 프로토콜 파서 · keepalive (RPi 측)
+│   └── tests/            # ENV 상태머신 로직 테스트 57건 (하드웨어 없이 실행)
 ├── hardware/             # 출력에 쓴 STL 3종 (리더암 · 팔로워암 · Waffle 플레이트)
 ├── ros2_ws/              # ROS2 패키지 (RPi 5)
+├── report/               # 개발완료보고서 빌드 시스템 (python-pptx)
 ├── tools/                # rpi_check.py · ros2_ws_sync.ps1
-├── archive/              # 폐기된 설계 (ESP32-서보 직결) · 로봇암 초기 계획
+├── archive/              # 폐기된 설계 · ENV v1~v8 · 초기 계획
 └── README.md
 ```
 
@@ -227,6 +236,6 @@ HazardBot-2026/
 
  - 협업 가이드 (브랜치 전략 · 커밋 컨벤션 · PR 프로세스): [docs/contributing.md](docs/contributing.md)
  - 시스템 아키텍처 상세: [docs/architecture.md](docs/architecture.md)
- - 본 저장소는 **비공개(Private)** 이며 경진대회 출품 전까지 외부 공개를 금지한다.
+ - 본 저장소는 제24회 임베디드SW경진대회 제출물이다. 대회 규정 제10조③ 에 따라 **공개(Public)** 로 유지한다.
  - Hugging Face LeRobot SO-ARM101 STL은 [원 저장소](https://github.com/huggingface/lerobot) 라이선스를 따른다.
 
