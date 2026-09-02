@@ -1029,9 +1029,10 @@ def p19():
 # ══ 20 · 개발 일정 및 업무 분장 ═══════════════════════════════════════════════
 def p20():
     slide("05 · 결과와 일정", "13주 공정과 세 명의 역할",
-          "2026-06-01부터 08-31까지 13주 · 기술적 선후관계로 순서를 정하고 역할을 나눴다", 20)
+          "2026-06-01부터 08-31까지 13주로 만들고, 9/1~9/3 사흘로 제출물을 냈다 — "
+          "순서는 기술적 선후관계로 정했다", 20)
     field(BODY_X, BODY_Y, 564, BODY_H)
-    label(96, 200, 516, "개발 일정 — 2026-06-01 ~ 08-31 · 13주", size=12,
+    label(96, 200, 516, "개발 일정 — 2026-06-01 ~ 09-03 · 13주 + 제출 3일", size=12,
           color=INK_DIM, weight=600, spc=0.08)
     phases = [("6월", "W1–W5", "계획 정본 · 저장소 · CI → 로봇팔 환경과 툴체인 → "
                               "전력 계통 설계·확정 → 3D 모델링 · 출력 → 캘리브레이션"),
@@ -1039,26 +1040,28 @@ def p20():
                               "DRIVE 보드와 주행 펌웨어 → 안전 체계 · 센서 체계 설계"),
               ("8월", "W10–W13", "시나리오 · 시연 설계 정본 → 세트 제작과 실측 → "
                                 "수집 게이트 · 준비 → ACT 수집 · 학습 · 검증"),
-              ("9월", "제출", "개발완료보고서 · 시연동영상 · 소스코드 저장소 정리")]
+              ("9월", "W14", "대회 양식 반영 → 필수항목 7개로 보고서 재구성 → "
+                              "저장소 정본화 · 자격증명 정리 → 영상 자료 · 파일 구성")]
     top = 232
     for i, (m, w, txt) in enumerate(phases):
         if i:
             rect(96, top - 0.5, 516, 1, fill=RULE_SFT)
-        rect(96, top + 12, 3, 44, fill=ACCENT if i < 3 else RULE)
-        textbox(112, top, 84, 68, [(m, 17, 700, INK, 1.3, -0.02, 0),
+        rect(96, top + 11, 3, 44, fill=ACCENT)
+        textbox(112, top, 84, 66, [(m, 17, 700, INK, 1.3, -0.02, 0),
                                    (w, 11, 400, INK_FNT, 1.3, 0, 2)],
                 anchor=MSO_ANCHOR.MIDDLE, wrap=False)
-        textbox(204, top, 408, 68, [(txt, 11, 400, INK_DIM, 1.5, 0, 0)],
+        textbox(204, top, 408, 66, [(txt, 11, 400, INK_DIM, 1.5, 0, 0)],
                 anchor=MSO_ANCHOR.MIDDLE, tag=f"p20.ph{i}")
-        top += 68
-    rect(96, 508, 516, 1, fill=RULE)
-    label(96, 520, 516, "마일스톤", size=11, color=INK_FNT, weight=600, spc=0.06)
+        top += 66
+    rect(96, 500, 516, 1, fill=RULE)
+    label(96, 511, 516, "마일스톤", size=11, color=INK_FNT, weight=600, spc=0.06)
     ms = [("07/11", "캘리브레이션 정본 4종 확정", False),
           ("07/16", "텔레옵 마일스톤 — 60초 오류 0건 · 평균 55.5Hz", True),
           ("08/14", "시연 공간 확보 · 세트 제작 완료", False),
-          ("08/26", "ACT 학습 완료 — 100,000 스텝", True)]
+          ("08/26", "ACT 학습 완료 — 100,000 스텝", True),
+          ("09/03", "저장소 정본화 — 추적 파일 259개 · ENV 펌웨어 반입", False)]
     for i, (d, t, star) in enumerate(ms):
-        y = 544 + i * 26
+        y = 533 + i * 25
         textbox(96, y, 60, 24, [(d, 12, 600, ACCENT if star else INK_FNT,
                                  1.3, 0, 0)],
                 anchor=MSO_ANCHOR.MIDDLE, wrap=False)
