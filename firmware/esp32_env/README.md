@@ -31,10 +31,14 @@ firmware/esp32_env/libraries/AMRDemoScenarioLogic/   →  Arduino/libraries/ 에
 외부 라이브러리는 **쓰지 않는다.** v11 이 `#include` 하는 것은 ESP32 코어
 (`WiFi.h` · `ESPmDNS.h` · `WiFiClient.h`)와 위 헤더가 전부다. MQ-2·KY-026 은
 아날로그/디지털 핀을 직접 읽고, 부저(TMB12A05)는 GPIO26 을 HIGH 로 두는
-액티브 모듈이라 라이브러리가 필요 없다.
+액티브 모듈이라 라이브러리가 필요 없다. 가스 채널은 **MQ-2 하나**(GPIO34)다.
 
-> 개발 중에 검토했던 Adafruit VL53L1X · MLX90614 · BusIO 는 최종 ENV 구성에서
-> 빠졌다. 미채택 근거는 [`docs/06_firmware/센서_지도.md`](../../docs/06_firmware/센서_지도.md).
+> ENV 보드에서 빠진 것: **MLX90614**(온도, 미채택 확정) · **MQ-135**(2026-09-03
+> 가스 센서를 MQ-2 하나로 확정). 근거는
+> [`docs/06_firmware/센서_지도.md`](../../docs/06_firmware/센서_지도.md) §2.
+>
+> ToF(VL53L1X)는 ENV 가 아니라 **DRIVE 보드** 소관이고 최종 구성에 들어 있다 —
+> [`../esp32_drive/esp32_drive_tcp/`](../esp32_drive/esp32_drive_tcp/) 의 장애물 정지 반사.
 
 ### 2. Wi-Fi 접속 정보
 

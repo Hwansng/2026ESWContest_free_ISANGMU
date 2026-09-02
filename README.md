@@ -14,7 +14,7 @@
       - Feetech STS3215 직렬 버스 6축 서보 데이지 체인 제어
       - 실시간 Load 센싱 기반 컴플라이언스 토크 제어 (적응형 파지)
       - OpenCV HSV + minAreaRect 방위각 분류 (60fps 엣지 비전)
-      - MQ-2 / MQ-135 비율 분석 가스 유형 추정 + 5종 센서 퓨전
+      - MQ-2 가스 센서 3초 게이트 판정 (5ms × 600 표본) + 화염·거리·라인 센서 퓨전
       - ROS2 Jazzy 노드 통합 + Flask 실시간 관제 대시보드
 
  - 미션 시나리오:
@@ -31,7 +31,7 @@
  | --- | --- | --- | --- |
  | Raspberry Pi 5 (8GB) | Ubuntu 24.04 LTS | ROS2 Jazzy | OpenCV 4.x, Flask + WebSocket, rosbag |
  | ESP32 DevKit V1 — **DRIVE** | Arduino-ESP32 3.0 | FreeRTOS (듀얼 코어) | TB6612FNG, VL53L1X, 5ch IR |
- | ESP32 DevKit V1 — **ENV** | Arduino-ESP32 3.0 | FreeRTOS (듀얼 코어) | MQ-2/135, KY-026, NeoPixel, Buzzer |
+ | ESP32 DevKit V1 — **ENV** | Arduino-ESP32 3.0 | FreeRTOS (듀얼 코어) | MQ-2, KY-026, NeoPixel, Buzzer |
  | 학습·제어 PC (Windows 11) | — | LeRobot 0.4.4 | Feetech STS3215 × 12 (USB 반이중 어댑터), ACT |
 
  다음과 같은 개발환경에서 본 프로젝트를 진행한다. 모든 RPi 5 ↔ ESP32 통신은 Wi-Fi TCP 듀얼 채널이며, `<CMD,VALUE,...,CS>\n` 포맷에 XOR 8-bit 체크섬을 사용한다.
@@ -54,8 +54,8 @@
  | 모터 드라이버 | TB6612FNG | DC 모터 (MOSFET, 효율 95%+) |
  | DC 모터 | JGA25-371 12V | 2WD 차동 구동 (334rpm) |
  | 서보 | Feetech STS3215 × 12 | 리더·팔로워 양팔 6DOF. 1선 반이중 버스, 마스터는 USB 어댑터 하나 (12-bit, 30kg·cm) |
- | 거리 센서 | VL53L1X (ToF) | 정면 장애물 · APPROACH 트리거 |
- | 가스 센서 | MQ-2, MQ-135 | 비율 분석 가스 유형 추정 |
+ | 거리 센서 | VL53L1X (ToF) | 정면 장애물 **로컬 정지 반사**(300mm · 3회 연속) · APPROACH 트리거 |
+ | 가스 센서 | MQ-2 | 3초 게이트 판정 — MQ-135 는 미채택(`docs/06_firmware/센서_지도.md` §2) |
  | ~~온도 센서~~ | ~~MLX90614~~ | **미채택** — 근거는 `docs/06_firmware/센서_지도.md` |
  | 화염 센서 | KY-026 | 화염 감지 (즉시 정지) |
  | 라인 센서 | 5채널 IR 라인센서 | 라인트레이싱 PID + 이탈 감지 |

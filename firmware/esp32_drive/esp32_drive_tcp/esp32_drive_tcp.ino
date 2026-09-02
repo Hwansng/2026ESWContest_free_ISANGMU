@@ -57,16 +57,22 @@ const char* RPI_HOST  = "";
 const char* RPI_MDNS  = "hazardbot";      // RPI_HOST 가 비었을 때만 사용 (hazardbot.local)
 const uint16_t RPI_PORT = 5000;           // amr_bridge_node.py: AMR_PORT = 5000
 
-// 🔴 이 스케치는 라이브러리 하나가 더 필요하다 — 2026-08-28 기준 안 깔려 있다.
+// ToF(VL53L1X) — 장애물 정지 계층. 컴파일하려면 라이브러리가 하나 더 필요하다:
 //    Arduino IDE > 라이브러리 매니저 > "Adafruit VL53L1X" (의존성 Adafruit BusIO 는 같이 깔린다)
-//    설치 전에는 아래를 0 으로 두고 업로드한다. 나머지 기능은 전부 그대로 돌고
-//    dist 만 -1(미측정)로 나가며, fault 는 SENSOR 로 뜬다.
-// 🔵 2026-08-30 — 라인추종 단독 벤치 테스트 중 ToF가 계속 정지를 걸어서 0으로
-//    끔. motionBlocked()는 tofOk를 안 보므로 SENSOR_ERROR 표시만 나오고 주행은
-//    막히지 않는다 — obstacleNear가 pollToF() 안에서만 세팅되는데 그 함수 본문이
-//    HAS_TOF=0이면 통째로 비니 장애물 정지 계층 자체가 꺼진다.
-//    🔴 실제 시연 전에는 반드시 1로 되돌릴 것 — 장애물 정지가 없어진 상태다.
-#define HAS_TOF 0
+//
+// 🔵 2026-08-30 — 라인추종 단독 벤치 테스트 중 ToF 가 계속 정지를 걸어서 0 으로 껐다.
+// 🔵 2026-09-03 — 다시 1 로 되돌린다. 장애물 정지는 안전 구조의 일부라 빼놓을 수 없다.
+//
+//    0 이면 장애물 정지 계층이 통째로 사라진다. obstacleNear 를 세팅하는 곳이
+//    pollToF() 뿐인데 그 함수 본문이 HAS_TOF=0 이면 비기 때문이다. 이때
+//    motionBlocked() 는 tofOk 를 안 보므로 주행은 그대로 되고 fault 만 SENSOR 로
+//    뜬다 — 즉 "정지가 없어진 줄 모르고 도는" 상태가 된다.
+//
+//    🔴 벤치에서 오정지가 재현되더라도 여기를 0 으로 되돌리지 말 것.
+//    먼저 OBSTACLE_STOP_MM(현재 300) 을 낮추거나 OBSTACLE_STREAK(현재 3) 을 올린다.
+//    센서가 없거나 begin() 이 실패하면 tofOk=false 로 남아 주행을 막지 않고
+//    dist 가 -1, fault 가 SENSOR 로 나간다 — 안전한 쪽으로 실패한다.
+#define HAS_TOF 1
 
 #if HAS_TOF
   #include <Wire.h>
