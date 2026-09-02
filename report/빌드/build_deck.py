@@ -470,25 +470,74 @@ def p08():
 
 # ══ 09 · 파일 구성 · 주요 함수 (소스코드 최종 커밋 후 작성) ═══════════════════
 def p09():
-    """🔴 보류 페이지.
+    """필수항목 3의 「파일 구성 · 함수별 기능」.
 
-    필수항목 3의 「파일 구성 · 함수별 기능」에 해당한다. 심사위원이 GitHub 저장소를
-    열어 대조할 페이지라, 저장소 최종 커밋이 끝난 뒤에 실제 트리·함수로 채운다.
-    지금 채워 두면 커밋 이후 실제 구조와 어긋날 수 있어 비워 둔다.
-    쪽번호가 밀리지 않도록 페이지 자리는 유지한다.
+    심사위원이 GitHub 저장소를 열어 대조하는 페이지다. 트리와 함수는 2026-09-03
+    저장소 상태(추적 파일 259개)에서 그대로 옮겼다. 저장소가 바뀌면 여기도 고친다.
     """
     slide("02 · 개발 환경", "파일 구성 · 주요 함수",
-          "저장소 디렉터리 구조와 노드별 핵심 함수의 역할", 9)
+          "저장소를 열었을 때 어디에 무엇이 있고, 어느 함수가 앞의 주장을 떠받치는지", 9)
+
+    # ── 왼쪽 · 디렉터리 트리 ──────────────────────────────────────────────
     field(BODY_X, BODY_Y, 564, BODY_H)
-    label(96, 200, 516, "저장소 구조", size=12, color=INK_DIM, weight=600, spc=0.08)
+    label(96, 200, 500, "저장소 구조", size=12, color=INK_DIM, weight=600, spc=0.08)
+
+    TREE = [
+        ("HazardBot/", "", True),
+        ("├ ros2_ws/src/", "ROS2 패키지 9종 · RPi 5", False),
+        ("├ firmware/", "", False),
+        ("│  ├ esp32_drive/", "DRIVE 스케치 6종", False),
+        ("│  ├ esp32_env/", "ENV 스케치 · 판정 헤더", False),
+        ("│  ├ tools/", "ENV 프로토콜 파서", False),
+        ("│  └ tests/", "로직 테스트 57건", False),
+        ("├ arm/", "", False),
+        ("│  ├ tools/", "STS3215 제어 · 진단 17종", False),
+        ("│  ├ act/", "ACT 수집 · 검수 · 데이터셋 메타", False),
+        ("│  ├ scripts/", "teleop · record · rollout", False),
+        ("│  └ calibration/", "캘리브레이션 정본 4개", False),
+        ("├ docs/", "설계 · 일정 · 실배선 기록 71건", False),
+        ("├ hardware/", "출력에 쓴 STL 3종", False),
+        ("├ report/", "이 보고서 빌드 시스템", False),
+        ("└ archive/", "폐기 설계 · ENV v1~v8", False),
+    ]
+    ty, lh = 226, 25
+    for i, (path, desc, head) in enumerate(TREE):
+        top = ty + i * lh
+        textbox(96, top, 252, lh,
+                [(path, 12.5, 700 if head else 500,
+                  INK if head else INK_DIM, 1.3, 0, 0)],
+                anchor=MSO_ANCHOR.MIDDLE, wrap=False, tag=f"p09.t{i}")
+        if desc:
+            textbox(356, top, 240, lh, [(desc, 11.5, 400, INK_FNT, 1.3, 0, 0)],
+                    anchor=MSO_ANCHOR.MIDDLE, wrap=False, tag=f"p09.d{i}")
+
+    # ── 오른쪽 · 주장을 떠받치는 함수 ────────────────────────────────────
     field(652, BODY_Y, 564, BODY_H)
-    label(684, 200, 516, "주요 함수 · 역할", size=12, color=INK_DIM, weight=600,
-          spc=0.08)
-    callout(184, 348, 912, 128,
-            [("소스코드 최종 커밋 후 작성", 19, 600, ACCENT, 1.35, -0.015, 0),
-             ("심사위원이 GitHub 저장소를 열어 대조하는 페이지다. "
-              "커밋이 끝난 실제 트리와 함수로 채운다.",
-              12, 400, INK_DIM, 1.5, 0, 6)])
+    label(684, 200, 516, "앞 장의 주장을 떠받치는 함수", size=12, color=INK_DIM,
+          weight=600, spc=0.08)
+    rows(684, 226, 516, 414, [
+        ("analyze_frame() · vision_node",
+         "HSV 마스크에서 가장 큰 윤곽을 잡아 minAreaRect 로 색과 방위각을 낸다. "
+         "10p 판정의 입력이 여기서 나온다."),
+        ("vision_cb() · hazard_detector",
+         "황색이면 그 자리에서 위험으로 판정하고, 적색이면 ENV 에 가스 검사를 "
+         "요청한다. 10p 규칙이 곧 이 함수다."),
+        ("updateGasInspection() · ENV 헤더",
+         "3초를 채우기 전에는 결과를 내지 않는 게이트(11p). constexpr 순수 함수라 "
+         "하드웨어 없이 시험할 수 있다."),
+        ("pollToF() · esp32_drive_tcp",
+         "장애물 300mm 가 3회 연속이면 doStop() 을 직접 부른다. RPi 를 거치지 않는 "
+         "정지 경로다."),
+        ("transition() · mission_orchestrator",
+         "IDLE → PATROL → … → REPORT 상태 전이가 지나는 단 하나의 창구. 상태 변경이 "
+         "여러 곳에 흩어지지 않는다."),
+        ("grip_request_cb() · arm_act_node",
+         "판정을 받아 ACT 롤아웃을 띄우고 결과를 되돌려준다. 14p 파이프라인의 "
+         "이음매다."),
+        ("verify_checksum() · 브리지 3종",
+         "ASCII 합 % 256 을 못 맞춘 프레임은 버린다. 두 ESP32 와 RPi 가 같은 규칙을 "
+         "쓴다."),
+    ], name_size=13, desc_size=11, tag="p09.fn")
 
 
 # ══ 10 · 위험물 판정 로직 ═════════════════════════════════════════════════════
@@ -882,7 +931,7 @@ def p18():
         textbox(cx, 328, cw, 15, [(ht, 11, 600, INK_FNT, 1.2, 0.06, 0)],
                 align=al, wrap=False)
     rect(88, 352, 320, 1, fill=RULE)
-    tiers = [("실시간 반사", "20ms", "ESP_Drive", "라인센서 · ToF"),
+    tiers = [("실시간 반사", "20ms", "ESP_Drive", "라인센서 · 모터 제어"),
              ("환경 감시", "100ms", "ESP_Env", "MQ-2 가스 · 화염"),
              ("인지 · 학습", "30fps", "RPi · 노트북", "카메라 · ACT")]
     top = 360
@@ -898,9 +947,10 @@ def p18():
                 anchor=MSO_ANCHOR.MIDDLE, align=PP_ALIGN.RIGHT, wrap=False)
         top += 70
     rect(88, 578, 320, 1, fill=RULE)
-    label(88, 592, 320, "판단 기준을 계층으로 고정하니, 어떤 센서를 어느 보드에 "
-          "붙일지가 논쟁이 아니라 규칙이 됐다.", size=11, color=INK_FNT, h=48,
-          tag="p18.c0.note")
+    label(88, 588, 320, "어떤 센서를 어느 보드에 붙일지가 논쟁이 아니라 규칙이 "
+          "됐다. ToF 는 이 주기와 별개로 측정이 준비될 때만 읽고, 300mm 가 3회 "
+          "연속이면 DRIVE 가 그 자리에서 모터를 끊는다.",
+          size=11, color=INK_FNT, h=68, tag="p18.c0.note")
 
     card(COL[4], BODY_Y, 368, BODY_H, eyebrow="② 안전",
          title="정지 권한을 한 곳에 모았다", tag="p18.c1")

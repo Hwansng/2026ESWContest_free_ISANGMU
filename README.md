@@ -34,7 +34,7 @@
  | ESP32 DevKit V1 — **ENV** | Arduino-ESP32 3.0 | FreeRTOS (듀얼 코어) | MQ-2, KY-026, NeoPixel, Buzzer |
  | 학습·제어 PC (Windows 11) | — | LeRobot 0.4.4 | Feetech STS3215 × 12 (USB 반이중 어댑터), ACT |
 
- 다음과 같은 개발환경에서 본 프로젝트를 진행한다. 모든 RPi 5 ↔ ESP32 통신은 Wi-Fi TCP 듀얼 채널이며, `<CMD,VALUE,...,CS>\n` 포맷에 XOR 8-bit 체크섬을 사용한다.
+ 다음과 같은 개발환경에서 본 프로젝트를 진행한다. 모든 RPi 5 ↔ ESP32 통신은 Wi-Fi TCP 듀얼 채널이며, `<CMD,VALUE,...,CS>\n` 포맷에 **ASCII 합 % 256** 체크섬(10진수)을 사용한다.
 
  > **설계 변경 이력.** 초기 구상은 ESP32 한 대가 STS3215 를 UART2 로 직접 구동하는 것이었으나,
  > STS3215 는 **1선 반이중** 버스라 마스터가 하나여야 한다. ESP32 를 서보 3핀 버스에 물리면
@@ -130,7 +130,7 @@
 ⑥ 하트비트 — 정지는 STOP 명령이 아니라 생존 신호로 건다.
    RPi 사망 · WiFi 두절 · ENV 사망을 하나의 메커니즘으로 잡기 위해서다.
 
-⑦ Message Format: <CMD,VALUE,CS>  예) <BUZZ,1>  — XOR 8-bit 체크섬, 16진수 2자리
+⑦ Message Format: <CMD,VALUE,CS>  예) <BUZZ,1>  — CS 를 뺀 payload 의 ASCII 합 % 256 (10진수)
 ```
   </details>
 
