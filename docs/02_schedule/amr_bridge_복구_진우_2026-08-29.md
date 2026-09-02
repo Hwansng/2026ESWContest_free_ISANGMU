@@ -10,22 +10,22 @@
 
 ## 0. 무슨 일이 있었나
 
-지금 HEAD(`7a3f5d2`, "신호 수정")의 `amr_bridge_node.py`를 열어보면 **`mission_orchestrator_node.py`의 내용이 그대로 들어가 있다**(`class AmrBridge` 자리에 `class MissionOrchestrator`가 있음). 커밋 이력으로 확인함:
+지금 HEAD(`2a643f8`, "신호 수정")의 `amr_bridge_node.py`를 열어보면 **`mission_orchestrator_node.py`의 내용이 그대로 들어가 있다**(`class AmrBridge` 자리에 `class MissionOrchestrator`가 있음). 커밋 이력으로 확인함:
 
-- 직전 커밋 `f12e9b8`("amr_bridge/arm_bridge 타임아웃 감지 수정")에서는 `amr_bridge_node.py`가 **정상**이었고, `last_recv_time` 타임아웃 버그도 정확히 고쳐져 있었다
-- 바로 다음 커밋 `7a3f5d2`에서 mission_orchestrator를 고치다가 **그 내용이 amr_bridge_node.py 파일에 실수로 덮어써진 것**으로 보임 (아마 저장할 때 파일을 잘못 지정했거나, 복사-붙여넣기 실수)
+- 직전 커밋 `b7e1f84`("amr_bridge/arm_bridge 타임아웃 감지 수정")에서는 `amr_bridge_node.py`가 **정상**이었고, `last_recv_time` 타임아웃 버그도 정확히 고쳐져 있었다
+- 바로 다음 커밋 `2a643f8`에서 mission_orchestrator를 고치다가 **그 내용이 amr_bridge_node.py 파일에 실수로 덮어써진 것**으로 보임 (아마 저장할 때 파일을 잘못 지정했거나, 복사-붙여넣기 실수)
 
 **영향**: DRIVE(포트 5000) TCP 서버 자체가 없다. MOVE/STOP/HB 전달, `/amr/object_near`, `/amr/connected` 전부 안 되고, 새로 추가한 RETURN 흐름(`/amr/return_request`↔DRIVE)도 당연히 안 된다.
 
-## 1. 복구 방법 — `f12e9b8` 기준 + RETURN 릴레이 추가
+## 1. 복구 방법 — `b7e1f84` 기준 + RETURN 릴레이 추가
 
-`f12e9b8`의 정상 버전을 그대로 되살리고, 거기에 지금 `mission_orchestrator`가 새로 요구하는 두 가지만 얹었다:
+`b7e1f84`의 정상 버전을 그대로 되살리고, 거기에 지금 `mission_orchestrator`가 새로 요구하는 두 가지만 얹었다:
 
 - `/amr/return_request` 구독 → 받으면 DRIVE로 `<RETURN,CS>` 전송
 - DRIVE의 `<RETDONE,CS>` 수신 → `/amr/return_complete` 발행 (mission_orchestrator의 `return_complete_cb`가 이걸 기다림)
 - 겸사겸사 DRIVE의 `<DETECT,CS>`(정지 마커 도달, 8/28 승환이 펌웨어에 추가한 것)도 `/amr/object_near`로 연결해뒀다 — 이전엔 dist 임계값으로만 판정하고 있었는데, 마커 도달 시점에도 한 번 더 트리거되는 것뿐이라 무해하다
 
-**`f12e9b8` 이후 다른 의도된 변경은 없다** — 순수 복구 + RETURN 릴레이 추가만이다.
+**`b7e1f84` 이후 다른 의도된 변경은 없다** — 순수 복구 + RETURN 릴레이 추가만이다.
 
 ```python
 """
@@ -34,10 +34,10 @@ AMR ESP32 #1(DRIVE)과 TCP로 통신하며 이동 명령을 ROS2 토픽과 연�
 가스/화염/거리 등 ENV 데이터는 sensor_bridge(포트 8765)가 담당함.
 DRIVE가 보내는 SENS 프레임 자체는 살아있고, 이 노드는 그중 battCv/dist만 실제로 씀.
 
-2026-08-29 복구 + RETURN 릴레이 추가 — 커밋 7a3f5d2("신호 수정")에서 이 파일이
-mission_orchestrator_node.py 내용으로 통째로 덮어써졌던 것을 f12e9b8(직전 정상
+2026-08-29 복구 + RETURN 릴레이 추가 — 커밋 2a643f8("신호 수정")에서 이 파일이
+mission_orchestrator_node.py 내용으로 통째로 덮어써졌던 것을 b7e1f84(직전 정상
 커밋) 기준으로 복구하고, 그 위에 mission_orchestrator의 새 RETURN 흐름이 요구하는
-릴레이만 추가함. f12e9b8 이후의 다른 의도된 변경은 없음.
+릴레이만 추가함. b7e1f84 이후의 다른 의도된 변경은 없음.
 """
 import rclpy
 from rclpy.node import Node
