@@ -15,8 +15,8 @@
 #include <ArduinoOTA.h>
 
 // ── 여기 두 줄만 수정 ─────────────────────────────────────
-const char* WIFI_SSID = "Hwan";
-const char* WIFI_PW   = "20241029";
+const char* WIFI_SSID = "여기에-AP-SSID";
+const char* WIFI_PW   = "여기에-AP-비밀번호";  // 🔴 공개 저장소라 실제 값을 적지 않는다. 업로드 전에 여기만 채울 것.
 // ─────────────────────────────────────────────────────────
 
 const int FW_VERSION = 1;          // OTA 성공 확인용 — 재업로드 때 2 로 올릴 것

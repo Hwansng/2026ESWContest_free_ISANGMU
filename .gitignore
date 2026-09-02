@@ -14,6 +14,7 @@ arm/tools/.*.json
 
 # 비밀 정보 (docs/contributing.md §7)
 secrets.h
+wifi_secrets.h
 config/secrets.yaml
 
 # 3D 모델 — 출력에 실제로 쓴 3종만 두고 나머지는 제외 (hardware/README.md)
@@ -25,3 +26,18 @@ config/secrets.yaml
 *.stp
 *.3mf
 *.gcode
+
+# LeRobot 데이터셋 실물 (parquet · mp4). 메타만 arm/act/dataset_meta/ 에 둔다
+output/
+outputs/
+
+# 런타임 로그 · 오프라인 설치용 휠
+logs/
+*.whl
+
+# 보고서 원본 자산 — report/README.md 「저장소에 없는 것」 참조
+report/영상/
+report/폰트/
+report/양식/
+report/사진/
+*.bak_before_*
