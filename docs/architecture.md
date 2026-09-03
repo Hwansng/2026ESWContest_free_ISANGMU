@@ -1,6 +1,6 @@
 # HazardBot 아키텍처 개요
 
-> 정본은 [`docs/HazardBot_계획변경_및_개선안_v5.md`](01_plan/HazardBot_계획변경_및_개선안_v5.md) 다.
+> 계획 정본(`HazardBot_계획변경_및_개선안_v5`)은 팀 내부 문서라 저장소에 두지 않는다.
 > 이 문서는 그 요약이며, 충돌하면 v5 와 각 영역 정본 문서가 이긴다.
 
 ## 2계층 + 제어 PC
@@ -73,7 +73,7 @@ IDLE → PATROL → DETECTED → CLASSIFY → APPROACH → GRIP → TRANSPORT �
 
 **판정은 구역을 모른다.** 위치가 아니라 내용으로 결정한다 — 적색 + 가스 = 위험,
 적색만 = 통과, 황색 = 가스와 무관하게 항상 위험.
-정본은 [`docs/scenario/시나리오_확정_2026-08-15.md`](03_scenario_demo/시나리오_확정_2026-08-15.md).
+시나리오 정본(`시나리오_확정_2026-08-15`)은 팀 내부 문서라 저장소에 두지 않는다.
 
 ## 통신 프로토콜
 
@@ -87,7 +87,7 @@ IDLE → PATROL → DETECTED → CLASSIFY → APPROACH → GRIP → TRANSPORT �
 | `RPI_TIMEOUT` | 조정 방침은 회신 문서 참조 |
 
 확정 경위와 12건 합의 내용은
-[`docs/handover/회신_진우_2026-08-25.md`](02_schedule/회신_진우_2026-08-25.md) 에 있다.
+팀 내부 인계 문서(`회신_진우_2026-08-25`)에 있다 — 저장소에는 두지 않는다.
 
 ## 항법
 
