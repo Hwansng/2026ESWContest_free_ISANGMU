@@ -28,10 +28,11 @@ OUT = r"C:\Users\sehi5\OneDrive\바탕 화면\HazardBot\PPT\HazardBot_개발완�
 COL = [64, 162, 260, 358, 456, 554, 652, 750, 848, 946, 1044, 1142]
 
 # ══ 제출 직전에 채워 넣는 값 ══════════════════════════════════════════════════
-# 팀명·팀번호가 정해지고 저장소·영상이 올라가면 이 세 줄만 고치고 다시 빌드한다.
+# 팀번호가 정해지고 저장소·영상이 올라가면 이 세 줄만 고치고 다시 빌드한다.
+# 팀명은 「이상무」로 확정됐다(2026-09-03) — TEAM 은 팀번호까지 나와야 채울 수 있다.
 # 비워 두면 슬라이드에 「확정 후 삽입」으로 찍힌다.
-TEAM = ""            # "<팀번호>_<팀명>"  예: "A-12_HAZARDBOT"
-GITHUB_URL = ""      # https://github.com/<사용자이름>/2026ESWContest_free_<팀명>
+TEAM = ""            # "<팀번호>_이상무"  — 팀번호 미확인. 예: "A-12_이상무"
+GITHUB_URL = ""      # https://github.com/Hwansng/2026ESWContest_free_이상무
 YOUTUBE_URL = ""     # https://youtu.be/…
 PENDING = "확정 후 삽입"
 
@@ -197,9 +198,9 @@ def p04():
         top += rh
 
     links = [("소스코드 링크", "GitHub", GITHUB_URL,
-              "github.com/<사용자이름>/2026ESWContest_free_<팀명>"),
+              "github.com/Hwansng/2026ESWContest_free_이상무"),
              ("시연 동영상 링크", "YouTube", YOUTUBE_URL,
-              "2026ESWContest_자유공모_<팀명>_시연동영상 · 3분 이내 · 720p 이상")]
+              "2026ESWContest_자유공모_이상무_시연동영상 · 3분 이내 · 720p 이상")]
     for i, (title, host, url, note) in enumerate(links):
         y = 176 + i * 256
         card(848, y, 368, 232, accent_bar=(i == 0), tag=f"p04.l{i}")
