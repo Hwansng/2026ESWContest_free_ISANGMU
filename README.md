@@ -22,7 +22,7 @@
    IDLE → PATROL → DETECTED → CLASSIFY → APPROACH → GRIP → TRANSPORT → ISOLATE → REPORT
    ```
 
- - 개발영상: _시연 후 업로드 예정_
+ - 개발영상: https://youtu.be/ElTdSD-DXlM (2분 38초 · 1080p)
 
  ---
  # ➕ Needed (architecture)

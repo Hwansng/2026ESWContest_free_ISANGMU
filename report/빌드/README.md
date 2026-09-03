@@ -24,7 +24,7 @@
 ```python
 TEAM        = "이상무"   # 표지 · 마무리 (팀번호가 없어 팀명만)
 GITHUB_URL  = ""   # 04p — 대회 필수 항목
-YOUTUBE_URL = ""   # 04p — 대회 필수 항목
+YOUTUBE_URL = "https://youtu.be/ElTdSD-DXlM"   # 04p — 대회 필수 항목
 ```
 
 ## 09p 는 비워 둔 페이지다
