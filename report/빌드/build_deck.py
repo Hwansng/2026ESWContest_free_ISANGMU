@@ -28,14 +28,13 @@ OUT = r"C:\Users\sehi5\OneDrive\바탕 화면\HazardBot\PPT\HazardBot_개발완�
 COL = [64, 162, 260, 358, 456, 554, 652, 750, 848, 946, 1044, 1142]
 
 # ══ 제출 직전에 채워 넣는 값 ══════════════════════════════════════════════════
-# 영상이 올라가면 YOUTUBE_URL 만 채우고 다시 빌드한다.
-# 비워 두면 슬라이드에 「확정 후 삽입」으로 찍힌다.
+# 세 값 모두 확정됐다 (2026-09-03). 비워 두면 슬라이드에 「확정 후 삽입」으로 찍힌다.
 # 가이드양식 표지 4번째 줄은 <팀번호_팀명> 이지만, 주최 측이 부여한 팀번호가 없다
 # (규정 v3 · 자유공모 세부안내 v2 · 참가신청서 어디에도 팀번호 항목이 없다).
 # 그래서 팀명만 넣는다 — 2026-09-03 결정.
 TEAM = "이상무"
 GITHUB_URL = "https://github.com/Hwansng/2026ESWContest_free_ISANGMU"
-YOUTUBE_URL = ""     # https://youtu.be/…
+YOUTUBE_URL = "https://youtu.be/ElTdSD-DXlM"
 PENDING = "확정 후 삽입"
 
 
