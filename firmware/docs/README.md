@@ -9,7 +9,7 @@
 | 핀 배정 · 배선 확정값 (정본) | [`docs/06_firmware/README.md`](../../docs/06_firmware/README.md) |
 | 센서 선정 · 미채택 근거 | [`docs/06_firmware/센서_지도.md`](../../docs/06_firmware/센서_지도.md) |
 | 구역 마커 설계 | [`docs/06_firmware/구역_마커_설계.md`](../../docs/06_firmware/구역_마커_설계.md) |
-| 배선 확정 (2026-08-14) | [`docs/06_firmware/배선_확정_2026-08-14.md`](../../docs/06_firmware/배선_확정_2026-08-14.md) |
+| 핀 배정 · 신호 배선표 (2026-08-14 확정) | [`docs/06_firmware/전력계통_실배선_2026-08-28.md` 2부](../../docs/06_firmware/전력계통_실배선_2026-08-28.md) |
 | 전력 계통 실배선 (2026-08-28) | [`docs/06_firmware/전력계통_실배선_2026-08-28.md`](../../docs/06_firmware/전력계통_실배선_2026-08-28.md) |
 | 만능기판 이전 가이드 | [`docs/06_firmware/만능기판_이전_가이드.md`](../../docs/06_firmware/만능기판_이전_가이드.md) |
 | v9 4센서 배선 가이드 | [`archive/`](../../archive/) |

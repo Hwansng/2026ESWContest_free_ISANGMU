@@ -33,4 +33,4 @@ ENV 보드 펌웨어와 전력·모터 계통을 정하면서 남긴 **설계 �
 
 - 핀 배정·배선 확정값 → [`../06_firmware/README.md`](../06_firmware/README.md)
 - 전력 계통 실배선 → [`../06_firmware/전력계통_실배선_2026-08-28.md`](../06_firmware/전력계통_실배선_2026-08-28.md)
-- 납땜 설명서(완성본 PDF) → [`../08_reference/HazardBot_만능기판_납땜_설명서.pdf`](../08_reference/HazardBot_만능기판_납땜_설명서.pdf)
+- 납땜 설명서(완성본 PDF) — 강희 작성. 팀 내부 자료라 저장소에 두지 않는다.

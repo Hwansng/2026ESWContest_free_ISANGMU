@@ -81,7 +81,7 @@ const uint16_t RPI_PORT = 5000;           // amr_bridge_node.py: AMR_PORT = 5000
 #endif
 
 // ══════════════════════════════════════════════════════════
-// 1. 핀 — firmware/README.md §1 · 배선_확정_2026-08-14.md §1.5
+// 1. 핀 — firmware/README.md §1 · 전력계통_실배선_2026-08-28.md 2부 §1.5
 // ══════════════════════════════════════════════════════════
 #define PIN_PWMA   25
 #define PIN_AIN1   26
