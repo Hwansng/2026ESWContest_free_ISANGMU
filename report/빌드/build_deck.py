@@ -28,10 +28,11 @@ OUT = r"C:\Users\sehi5\OneDrive\바탕 화면\HazardBot\PPT\HazardBot_개발완�
 COL = [64, 162, 260, 358, 456, 554, 652, 750, 848, 946, 1044, 1142]
 
 # ══ 제출 직전에 채워 넣는 값 ══════════════════════════════════════════════════
-# 팀명·팀번호가 정해지고 저장소·영상이 올라가면 이 세 줄만 고치고 다시 빌드한다.
+# 팀번호가 정해지고 저장소·영상이 올라가면 이 세 줄만 고치고 다시 빌드한다.
+# 팀명은 「이상무」로 확정됐다(2026-09-03) — TEAM 은 팀번호까지 나와야 채울 수 있다.
 # 비워 두면 슬라이드에 「확정 후 삽입」으로 찍힌다.
-TEAM = ""            # "<팀번호>_<팀명>"  예: "A-12_HAZARDBOT"
-GITHUB_URL = ""      # https://github.com/<사용자이름>/2026ESWContest_free_<팀명>
+TEAM = ""            # "<팀번호>_이상무"  — 팀번호 미확인. 예: "A-12_이상무"
+GITHUB_URL = ""      # https://github.com/Hwansng/2026ESWContest_free_이상무
 YOUTUBE_URL = ""     # https://youtu.be/…
 PENDING = "확정 후 삽입"
 
@@ -197,9 +198,9 @@ def p04():
         top += rh
 
     links = [("소스코드 링크", "GitHub", GITHUB_URL,
-              "github.com/<사용자이름>/2026ESWContest_free_<팀명>"),
+              "github.com/Hwansng/2026ESWContest_free_이상무"),
              ("시연 동영상 링크", "YouTube", YOUTUBE_URL,
-              "2026ESWContest_자유공모_<팀명>_시연동영상 · 3분 이내 · 720p 이상")]
+              "2026ESWContest_자유공모_이상무_시연동영상 · 3분 이내 · 720p 이상")]
     for i, (title, host, url, note) in enumerate(links):
         y = 176 + i * 256
         card(848, y, 368, 232, accent_bar=(i == 0), tag=f"p04.l{i}")
@@ -470,25 +471,74 @@ def p08():
 
 # ══ 09 · 파일 구성 · 주요 함수 (소스코드 최종 커밋 후 작성) ═══════════════════
 def p09():
-    """🔴 보류 페이지.
+    """필수항목 3의 「파일 구성 · 함수별 기능」.
 
-    필수항목 3의 「파일 구성 · 함수별 기능」에 해당한다. 심사위원이 GitHub 저장소를
-    열어 대조할 페이지라, 저장소 최종 커밋이 끝난 뒤에 실제 트리·함수로 채운다.
-    지금 채워 두면 커밋 이후 실제 구조와 어긋날 수 있어 비워 둔다.
-    쪽번호가 밀리지 않도록 페이지 자리는 유지한다.
+    심사위원이 GitHub 저장소를 열어 대조하는 페이지다. 트리와 함수는 2026-09-03
+    저장소 상태(추적 파일 259개)에서 그대로 옮겼다. 저장소가 바뀌면 여기도 고친다.
     """
     slide("02 · 개발 환경", "파일 구성 · 주요 함수",
-          "저장소 디렉터리 구조와 노드별 핵심 함수의 역할", 9)
+          "저장소를 열었을 때 어디에 무엇이 있고, 어느 함수가 앞의 주장을 떠받치는지", 9)
+
+    # ── 왼쪽 · 디렉터리 트리 ──────────────────────────────────────────────
     field(BODY_X, BODY_Y, 564, BODY_H)
-    label(96, 200, 516, "저장소 구조", size=12, color=INK_DIM, weight=600, spc=0.08)
+    label(96, 200, 500, "저장소 구조", size=12, color=INK_DIM, weight=600, spc=0.08)
+
+    TREE = [
+        ("HazardBot/", "", True),
+        ("├ ros2_ws/src/", "ROS2 패키지 9종 · RPi 5", False),
+        ("├ firmware/", "", False),
+        ("│  ├ esp32_drive/", "DRIVE 스케치 6종", False),
+        ("│  ├ esp32_env/", "ENV 스케치 · 판정 헤더", False),
+        ("│  ├ tools/", "ENV 프로토콜 파서", False),
+        ("│  └ tests/", "로직 테스트 57건", False),
+        ("├ arm/", "", False),
+        ("│  ├ tools/", "STS3215 제어 · 진단 17종", False),
+        ("│  ├ act/", "ACT 수집 · 검수 · 데이터셋 메타", False),
+        ("│  ├ scripts/", "teleop · record · rollout", False),
+        ("│  └ calibration/", "캘리브레이션 정본 4개", False),
+        ("├ docs/", "설계 · 일정 · 실배선 기록 71건", False),
+        ("├ hardware/", "출력에 쓴 STL 3종", False),
+        ("├ report/", "이 보고서 빌드 시스템", False),
+        ("└ archive/", "폐기 설계 · ENV v1~v8", False),
+    ]
+    ty, lh = 226, 25
+    for i, (path, desc, head) in enumerate(TREE):
+        top = ty + i * lh
+        textbox(96, top, 252, lh,
+                [(path, 12.5, 700 if head else 500,
+                  INK if head else INK_DIM, 1.3, 0, 0)],
+                anchor=MSO_ANCHOR.MIDDLE, wrap=False, tag=f"p09.t{i}")
+        if desc:
+            textbox(356, top, 240, lh, [(desc, 11.5, 400, INK_FNT, 1.3, 0, 0)],
+                    anchor=MSO_ANCHOR.MIDDLE, wrap=False, tag=f"p09.d{i}")
+
+    # ── 오른쪽 · 주장을 떠받치는 함수 ────────────────────────────────────
     field(652, BODY_Y, 564, BODY_H)
-    label(684, 200, 516, "주요 함수 · 역할", size=12, color=INK_DIM, weight=600,
-          spc=0.08)
-    callout(184, 348, 912, 128,
-            [("소스코드 최종 커밋 후 작성", 19, 600, ACCENT, 1.35, -0.015, 0),
-             ("심사위원이 GitHub 저장소를 열어 대조하는 페이지다. "
-              "커밋이 끝난 실제 트리와 함수로 채운다.",
-              12, 400, INK_DIM, 1.5, 0, 6)])
+    label(684, 200, 516, "앞 장의 주장을 떠받치는 함수", size=12, color=INK_DIM,
+          weight=600, spc=0.08)
+    rows(684, 226, 516, 414, [
+        ("analyze_frame() · vision_node",
+         "HSV 마스크에서 가장 큰 윤곽을 잡아 minAreaRect 로 색과 방위각을 낸다. "
+         "10p 판정의 입력이 여기서 나온다."),
+        ("vision_cb() · hazard_detector",
+         "황색이면 그 자리에서 위험으로 판정하고, 적색이면 ENV 에 가스 검사를 "
+         "요청한다. 10p 규칙이 곧 이 함수다."),
+        ("updateGasInspection() · ENV 헤더",
+         "3초를 채우기 전에는 결과를 내지 않는 게이트(11p). constexpr 순수 함수라 "
+         "하드웨어 없이 시험할 수 있다."),
+        ("pollToF() · esp32_drive_tcp",
+         "장애물 300mm 가 3회 연속이면 doStop() 을 직접 부른다. RPi 를 거치지 않는 "
+         "정지 경로다."),
+        ("transition() · mission_orchestrator",
+         "IDLE → PATROL → … → REPORT 상태 전이가 지나는 단 하나의 창구. 상태 변경이 "
+         "여러 곳에 흩어지지 않는다."),
+        ("grip_request_cb() · arm_act_node",
+         "판정을 받아 ACT 롤아웃을 띄우고 결과를 되돌려준다. 14p 파이프라인의 "
+         "이음매다."),
+        ("verify_checksum() · 브리지 3종",
+         "ASCII 합 % 256 을 못 맞춘 프레임은 버린다. 두 ESP32 와 RPi 가 같은 규칙을 "
+         "쓴다."),
+    ], name_size=13, desc_size=11, tag="p09.fn")
 
 
 # ══ 10 · 위험물 판정 로직 ═════════════════════════════════════════════════════
@@ -882,7 +932,7 @@ def p18():
         textbox(cx, 328, cw, 15, [(ht, 11, 600, INK_FNT, 1.2, 0.06, 0)],
                 align=al, wrap=False)
     rect(88, 352, 320, 1, fill=RULE)
-    tiers = [("실시간 반사", "20ms", "ESP_Drive", "라인센서 · ToF"),
+    tiers = [("실시간 반사", "20ms", "ESP_Drive", "라인센서 · 모터 제어"),
              ("환경 감시", "100ms", "ESP_Env", "MQ-2 가스 · 화염"),
              ("인지 · 학습", "30fps", "RPi · 노트북", "카메라 · ACT")]
     top = 360
@@ -898,9 +948,10 @@ def p18():
                 anchor=MSO_ANCHOR.MIDDLE, align=PP_ALIGN.RIGHT, wrap=False)
         top += 70
     rect(88, 578, 320, 1, fill=RULE)
-    label(88, 592, 320, "판단 기준을 계층으로 고정하니, 어떤 센서를 어느 보드에 "
-          "붙일지가 논쟁이 아니라 규칙이 됐다.", size=11, color=INK_FNT, h=48,
-          tag="p18.c0.note")
+    label(88, 588, 320, "어떤 센서를 어느 보드에 붙일지가 논쟁이 아니라 규칙이 "
+          "됐다. ToF 는 이 주기와 별개로 측정이 준비될 때만 읽고, 300mm 가 3회 "
+          "연속이면 DRIVE 가 그 자리에서 모터를 끊는다.",
+          size=11, color=INK_FNT, h=68, tag="p18.c0.note")
 
     card(COL[4], BODY_Y, 368, BODY_H, eyebrow="② 안전",
          title="정지 권한을 한 곳에 모았다", tag="p18.c1")
@@ -979,9 +1030,10 @@ def p19():
 # ══ 20 · 개발 일정 및 업무 분장 ═══════════════════════════════════════════════
 def p20():
     slide("05 · 결과와 일정", "13주 공정과 세 명의 역할",
-          "2026-06-01부터 08-31까지 13주 · 기술적 선후관계로 순서를 정하고 역할을 나눴다", 20)
+          "2026-06-01부터 08-31까지 13주로 만들고, 9/1~9/3 사흘로 제출물을 냈다 — "
+          "순서는 기술적 선후관계로 정했다", 20)
     field(BODY_X, BODY_Y, 564, BODY_H)
-    label(96, 200, 516, "개발 일정 — 2026-06-01 ~ 08-31 · 13주", size=12,
+    label(96, 200, 516, "개발 일정 — 2026-06-01 ~ 09-03 · 13주 + 제출 3일", size=12,
           color=INK_DIM, weight=600, spc=0.08)
     phases = [("6월", "W1–W5", "계획 정본 · 저장소 · CI → 로봇팔 환경과 툴체인 → "
                               "전력 계통 설계·확정 → 3D 모델링 · 출력 → 캘리브레이션"),
@@ -989,26 +1041,28 @@ def p20():
                               "DRIVE 보드와 주행 펌웨어 → 안전 체계 · 센서 체계 설계"),
               ("8월", "W10–W13", "시나리오 · 시연 설계 정본 → 세트 제작과 실측 → "
                                 "수집 게이트 · 준비 → ACT 수집 · 학습 · 검증"),
-              ("9월", "제출", "개발완료보고서 · 시연동영상 · 소스코드 저장소 정리")]
+              ("9월", "W14", "대회 양식 반영 → 필수항목 7개로 보고서 재구성 → "
+                              "저장소 정본화 · 자격증명 정리 → 영상 자료 · 파일 구성")]
     top = 232
     for i, (m, w, txt) in enumerate(phases):
         if i:
             rect(96, top - 0.5, 516, 1, fill=RULE_SFT)
-        rect(96, top + 12, 3, 44, fill=ACCENT if i < 3 else RULE)
-        textbox(112, top, 84, 68, [(m, 17, 700, INK, 1.3, -0.02, 0),
+        rect(96, top + 11, 3, 44, fill=ACCENT)
+        textbox(112, top, 84, 66, [(m, 17, 700, INK, 1.3, -0.02, 0),
                                    (w, 11, 400, INK_FNT, 1.3, 0, 2)],
                 anchor=MSO_ANCHOR.MIDDLE, wrap=False)
-        textbox(204, top, 408, 68, [(txt, 11, 400, INK_DIM, 1.5, 0, 0)],
+        textbox(204, top, 408, 66, [(txt, 11, 400, INK_DIM, 1.5, 0, 0)],
                 anchor=MSO_ANCHOR.MIDDLE, tag=f"p20.ph{i}")
-        top += 68
-    rect(96, 508, 516, 1, fill=RULE)
-    label(96, 520, 516, "마일스톤", size=11, color=INK_FNT, weight=600, spc=0.06)
+        top += 66
+    rect(96, 500, 516, 1, fill=RULE)
+    label(96, 511, 516, "마일스톤", size=11, color=INK_FNT, weight=600, spc=0.06)
     ms = [("07/11", "캘리브레이션 정본 4종 확정", False),
           ("07/16", "텔레옵 마일스톤 — 60초 오류 0건 · 평균 55.5Hz", True),
           ("08/14", "시연 공간 확보 · 세트 제작 완료", False),
-          ("08/26", "ACT 학습 완료 — 100,000 스텝", True)]
+          ("08/26", "ACT 학습 완료 — 100,000 스텝", True),
+          ("09/03", "저장소 정본화 — 추적 파일 259개 · ENV 펌웨어 반입", False)]
     for i, (d, t, star) in enumerate(ms):
-        y = 544 + i * 26
+        y = 533 + i * 25
         textbox(96, y, 60, 24, [(d, 12, 600, ACCENT if star else INK_FNT,
                                  1.3, 0, 0)],
                 anchor=MSO_ANCHOR.MIDDLE, wrap=False)

@@ -39,7 +39,7 @@ SLIDES = [
 
 # 키는 슬라이드 번호(s01~s22)이지 쪽번호가 아니다.
 NOTES = {
-    1: "🔴 팀번호_팀명은 확정 후 삽입 — build_deck.py 상단 TEAM",
+    1: "🔴 팀번호만 미확인 (팀명 = 이상무) — build_deck.py 상단 TEAM 을 <팀번호>_이상무 로",
     4: "시연 공간 사진 — 사진/전체 시연장.jpg",
     5: "🔴 GitHub · YouTube 링크는 확정 후 삽입 — build_deck.py 상단 "
        "GITHUB_URL / YOUTUBE_URL. 대회가 필수로 지정한 항목이다",
@@ -201,7 +201,7 @@ def build():
     <li>강조색 <b>#0066cc</b> 단일</li>
     <li>본문 하단 <b>y≤664</b> · 본문 20p 전부 통과</li>
     <li>제목 <b>y=76</b> · 헤더 룰 <b>y=158</b> 픽셀 동일</li>
-    <li>미확정 <b>팀명 · GitHub · YouTube</b></li>
+    <li>미확정 <b>팀번호 · GitHub · YouTube</b></li>
   </ul>
 </header>
 {''.join(nav)}
@@ -212,7 +212,7 @@ def build():
   분량·필수항목 근거 <code>PPT/양식/</code> · 검증 수치 <code>rollout_plan.csv</code><br>
   사진과 대시보드 화면은 <code>PPT/사진</code>, <code>PPT/영상</code> 원본에서 직접 추출했습니다.
   제출은 PDF 변환본으로 하며 파일명은
-  <code>2026ESWContest_자유공모_팀명_개발완료보고서.pdf</code> 입니다.
+  <code>2026ESWContest_자유공모_이상무_개발완료보고서.pdf</code> 입니다.
 </footer>
 </div>
 <script>

@@ -2,7 +2,7 @@
 
 # ➕ 참가정보
  - 2026년 임베디드 소프트웨어 경진대회 (자유공모 부문)
- - 팀명: HazardBot
+ - 팀명: 이상무
  - 작품명: HazardBot — STS3215 직렬 버스 서보 기반 6DOF 적응형 파지 미션 기반 자율 위험물 탐지·격리 로봇 시스템
  - 팀원: 박승환, 윤강희, 이진우
  <br>
@@ -14,7 +14,7 @@
       - Feetech STS3215 직렬 버스 6축 서보 데이지 체인 제어
       - 실시간 Load 센싱 기반 컴플라이언스 토크 제어 (적응형 파지)
       - OpenCV HSV + minAreaRect 방위각 분류 (60fps 엣지 비전)
-      - MQ-2 / MQ-135 비율 분석 가스 유형 추정 + 5종 센서 퓨전
+      - MQ-2 가스 센서 3초 게이트 판정 (5ms × 600 표본) + 화염·거리·라인 센서 퓨전
       - ROS2 Jazzy 노드 통합 + Flask 실시간 관제 대시보드
 
  - 미션 시나리오:
@@ -31,10 +31,10 @@
  | --- | --- | --- | --- |
  | Raspberry Pi 5 (8GB) | Ubuntu 24.04 LTS | ROS2 Jazzy | OpenCV 4.x, Flask + WebSocket, rosbag |
  | ESP32 DevKit V1 — **DRIVE** | Arduino-ESP32 3.0 | FreeRTOS (듀얼 코어) | TB6612FNG, VL53L1X, 5ch IR |
- | ESP32 DevKit V1 — **ENV** | Arduino-ESP32 3.0 | FreeRTOS (듀얼 코어) | MQ-2/135, KY-026, NeoPixel, Buzzer |
+ | ESP32 DevKit V1 — **ENV** | Arduino-ESP32 3.0 | FreeRTOS (듀얼 코어) | MQ-2, KY-026, NeoPixel, Buzzer |
  | 학습·제어 PC (Windows 11) | — | LeRobot 0.4.4 | Feetech STS3215 × 12 (USB 반이중 어댑터), ACT |
 
- 다음과 같은 개발환경에서 본 프로젝트를 진행한다. 모든 RPi 5 ↔ ESP32 통신은 Wi-Fi TCP 듀얼 채널이며, `<CMD,VALUE,...,CS>\n` 포맷에 XOR 8-bit 체크섬을 사용한다.
+ 다음과 같은 개발환경에서 본 프로젝트를 진행한다. 모든 RPi 5 ↔ ESP32 통신은 Wi-Fi TCP 듀얼 채널이며, `<CMD,VALUE,...,CS>\n` 포맷에 **ASCII 합 % 256** 체크섬(10진수)을 사용한다.
 
  > **설계 변경 이력.** 초기 구상은 ESP32 한 대가 STS3215 를 UART2 로 직접 구동하는 것이었으나,
  > STS3215 는 **1선 반이중** 버스라 마스터가 하나여야 한다. ESP32 를 서보 3핀 버스에 물리면
@@ -54,14 +54,14 @@
  | 모터 드라이버 | TB6612FNG | DC 모터 (MOSFET, 효율 95%+) |
  | DC 모터 | JGA25-371 12V | 2WD 차동 구동 (334rpm) |
  | 서보 | Feetech STS3215 × 12 | 리더·팔로워 양팔 6DOF. 1선 반이중 버스, 마스터는 USB 어댑터 하나 (12-bit, 30kg·cm) |
- | 거리 센서 | VL53L1X (ToF) | 정면 장애물 · APPROACH 트리거 |
- | 가스 센서 | MQ-2, MQ-135 | 비율 분석 가스 유형 추정 |
+ | 거리 센서 | VL53L1X (ToF) | 정면 장애물 **로컬 정지 반사**(300mm · 3회 연속) · APPROACH 트리거 |
+ | 가스 센서 | MQ-2 | 3초 게이트 판정 — MQ-135 는 미채택(`docs/06_firmware/센서_지도.md` §2) |
  | ~~온도 센서~~ | ~~MLX90614~~ | **미채택** — 근거는 `docs/06_firmware/센서_지도.md` |
  | 화염 센서 | KY-026 | 화염 감지 (즉시 정지) |
  | 라인 센서 | 5채널 IR 라인센서 | 라인트레이싱 PID + 이탈 감지 |
  | 프레임 | SO-ARM101 (3D 출력) | LeRobot 오픈소스 STL 자체 제작 |
  | 카메라 | RPi Camera v2 | OpenCV HSV + minAreaRect (60fps) |
- | 전원 | 3S LiPo 11.1V | 듀얼 XL4015 (RPi 5 전용 + ESP32 공용) |
+ | 전원 | 3S LiPo 11.1V | **XL4016** → RPi 5 전용 · **XL4015** → 1to2 XT60 → ESP32 2보드. 실배선 정본은 [`docs/06_firmware/전력계통_실배선_2026-08-28.md`](docs/06_firmware/전력계통_실배선_2026-08-28.md) |
 
  ---
  # ➕ System Process
@@ -130,7 +130,7 @@
 ⑥ 하트비트 — 정지는 STOP 명령이 아니라 생존 신호로 건다.
    RPi 사망 · WiFi 두절 · ENV 사망을 하나의 메커니즘으로 잡기 위해서다.
 
-⑦ Message Format: <CMD,VALUE,CS>  예) <BUZZ,1>  — XOR 8-bit 체크섬, 16진수 2자리
+⑦ Message Format: <CMD,VALUE,CS>  예) <BUZZ,1>  — CS 를 뺀 payload 의 ASCII 합 % 256 (10진수)
 ```
   </details>
 
@@ -149,8 +149,8 @@
    12-bit 마그네틱 엔코더로 0.088° 절대 위치 피드백을 받는다.
 
 ② 리더·팔로워 텔레옵 (LeRobot 0.4.4 · Windows 11):
-   - 리더 6축은 XL4015 7.4V 강압 레일, 팔로워 6축은 12V 직결
-   - 60Hz / 60초 무결 (관문 G2 Exit 충족)
+   - 팔로워 6축은 12V 직결. 리더 7.4V 레일은 ACT 수집·학습을 마친 뒤 삭제했다 (시연에 리더암 미사용)
+   - 60초 연속 구동 오류·경고 0건 · 30ms 초과 0회 · 평균 55.5Hz (관문 G2 Exit 충족)
    - 정렬 확인을 선행하고, 실패하면 텔레옵을 시작하지 않는다
 
 ③ Compliance Grip: 실시간으로 그리퍼 서보의 Load 값을 모니터링한다.

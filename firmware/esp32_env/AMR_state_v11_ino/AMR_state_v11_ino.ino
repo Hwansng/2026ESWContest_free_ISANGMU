@@ -11,8 +11,15 @@
  * - Sensor state evaluation and continuous safety-alarm output.
  * - Battery voltage remains a test injection until a divider is connected.
  *
+ * Gas sensing is MQ-2 only (final decision 2026-09-03). MQ-135 is not fitted.
+ *
  * RPi Message Format:
  *   <SENS,mq135,mq2,flame,battCv,stateCode,actionCode,faultCode,checksum>
+ *
+ * The mq135 field is a constant 0. It is kept in place because
+ * sensor_bridge_node.py parses this frame by field position -- removing the
+ * field would shift every value after it. Do not renumber the frame here
+ * without changing the parser in the same commit.
  *
  * checksum is the decimal ASCII sum of the payload modulo 256.
  */

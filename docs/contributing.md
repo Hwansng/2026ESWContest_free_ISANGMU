@@ -6,16 +6,16 @@
 
 > 🔵 **2026-08-18 역할 재분담 반영.** 초기 분담(승환=암+비전 / 강희=AMR+전력)은 폐기됐다.
 > **전력은 전 구간 승환 전담**이고, AMR 주행도 7/20 에 승환에게 이관됐다.
-> 역할별 상세는 [`docs/handover/담당정리_*_2026-08-18.md`](02_schedule/) 참조.
+> 역할별 상세는 [`docs/02_schedule/담당정리_*_2026-08-18.md`](02_schedule/) 참조.
 
 | 팀원 | 주 담당 | 코드·문서 영역 |
 |---|---|---|
-| **승환** | 로봇암 · ACT · DRIVE 주행 · **전력 전 구간** · 시나리오 · 세트 | `arm/`, `firmware/esp32_drive/`, `firmware/sts3215/`, `firmware/docs/`, `hardware/`, `docs/scenario/`, `docs/schedule/`, `tools/` |
-| **강희** | ENV 보드 (가스·화염 환경 감시) · 만능기판 납땜 · 임계값 | ENV 펌웨어(저장소 밖 · 로컬), `firmware/docs/amr_v9_4sensor_*` |
+| **승환** | 로봇암 · ACT · DRIVE 주행 · **전력 전 구간** · 시나리오 · 세트 | `arm/`, `firmware/esp32_drive/`, `firmware/sts3215/`, `hardware/`, `docs/02_schedule/`, `docs/03_scenario_demo/`, `docs/06_firmware/`, `tools/`, `report/` |
+| **강희** | ENV 보드 (가스·화염 환경 감시) · 만능기판 납땜 · 임계값 | `firmware/esp32_env/` (v11 정본 · v9 · `AMRDemoScenarioLogic`), `firmware/tests/`, `docs/10_env_design/` |
 | **진우** | RPi 5 통합 · ROS2 노드 · FSM · 대시보드 | `ros2_ws/src/` (`mission_orchestrator`, `vision_node`, `hazard_detector`, `amr_bridge`, `arm_bridge`, `sensor_bridge`, `arm_controller`, `arm_act_node`, `hazardbot_dashboard`) |
 
 각자 자기 영역에서 단독 개발/테스트하며, 통합은 합동 작업일에 세 플랫폼을 연결한다.
-합동 회차 기록은 [`docs/schedule/작업일정_*.md`](02_schedule/) 에 있다.
+합동 회차 기록은 [`docs/02_schedule/작업일정_*.md`](02_schedule/) 에 있다.
 
 ## 2. 브랜치 전략
 
@@ -88,8 +88,10 @@ SYNC_READ 한 번에 6축 모두 읽어 약 5ms로 단축.
 ## 5. 충돌 회피 규칙
 
 - 공유 파일(`README.md`, `docs/architecture.md`, `.gitignore`)은 변경 전 공지
-- 핀맵·배선 변경은 **`firmware/docs/배선_확정_2026-08-14.md` 가 정본**이다. 이 문서부터 고치고, PR 본문에 변경 표를 포함한다 (DRIVE·ENV 양쪽 영향 검토)
-- 통신 규격(포트 8765 · 명령 포맷 · 타임아웃) 변경은 **진우 동의 필수** — 합의 원문은 `docs/handover/회신_진우_2026-08-25.md`
+- 핀맵·배선 변경은 **`docs/06_firmware/배선_확정_2026-08-14.md` 가 정본**이다. 이 문서부터 고치고, PR 본문에 변경 표를 포함한다 (DRIVE·ENV 양쪽 영향 검토)
+- 전력 계통은 **`docs/06_firmware/전력계통_실배선_2026-08-28.md` 가 정본**이다. 8/18 계통도(DFR0753 · XL4015 2개 · 리더 7.4V 레일)는 무효다
+- 펌웨어 문서 사본을 `firmware/docs/` 에 만들지 않는다 — 두 군데 있으면 반드시 한쪽이 낡는다
+- 통신 규격(포트 8765 · 명령 포맷 · 타임아웃) 변경은 **진우 동의 필수** — 합의 원문은 `docs/02_schedule/회신_진우_2026-08-25.md`
 - 🔴 **캘리브레이션·카메라 구성을 바꾸면 기존 ACT 데이터셋이 전량 무효**가 된다. 수집 이후에는 `arm/calibration/` 을 건드리기 전에 반드시 공지한다
 
 ## 6. CI 정책
@@ -101,27 +103,30 @@ SYNC_READ 한 번에 6축 모두 읽어 약 5ms로 단축.
 ## 7. 비밀 정보 관리
 
 - Wi-Fi SSID/PW, MQTT 자격증명, API 키 등은 **절대 커밋 금지**
-- ESP32 펌웨어는 `secrets.h`(gitignored)로 분리:
+- ESP32 펌웨어는 `wifi_secrets.h`(gitignored)로 분리하고, 예시 파일만 커밋한다:
   ```cpp
-  // firmware/esp32_drive/<스케치>/secrets.h  (gitignored)
+  // firmware/esp32_env/AMR_state_v11_ino/wifi_secrets.h  (gitignored)
+  // 저장소에 올라가는 것은 wifi_secrets.example.h 뿐이다
   #define WIFI_SSID "your_ssid"
   #define WIFI_PASS "your_pass"
   ```
-- ROS2는 `config/secrets.yaml`(gitignored) + `config/secrets.example.yaml`(템플릿)
+- DRIVE 스케치는 SSID/PW 를 자리표시자로 두고, `.gitignore` 가 `wifi_secrets.h` 를 막는다
 - 실수로 커밋 시 즉시 슬랙 공지 → 새 자격증명 발급 → `git filter-repo`로 히스토리 제거
 
 ## 8. 통합 테스트 일정
 
 | 시점 | 항목 | 상태 |
 |---|---|---|
-| 07/16 | **★ 마일스톤 1 (텔레옵)** — 60Hz / 60초 무결, 관문 G2 Exit | ✅ 달성 |
+| 07/16 | **★ 마일스톤 1 (텔레옵)** — 60초 오류·경고 0건 · 30ms 초과 0회 · 평균 55.5Hz, 관문 G2 Exit | ✅ 달성 |
 | 08/14 | 시연 공간 확보 · 세트 제작 | ✅ 완료 |
-| 08/26 | ACT 수집 100/100 에피소드 | ✅ 완료 |
-| 08/27 | ACT 학습 100,000 스텝 | ✅ 완료 |
-| 08/28 ~ 08/30 | 실물 롤아웃 검증 (판정 기준: 물체별 10회 중 8회) | 진행 |
-| 08/31 | 산출물 정본 마감 (마감 09/04, 9/1~9/4 버퍼) | 예정 |
+| 08/25 | ACT 수집 100/100 에피소드 | ✅ 완료 |
+| 08/26 | ACT 학습 100,000 스텝 (03:42 착수 → 08:59 완료 · 실연산 4시간 47분) | ✅ 완료 |
+| 08/28 | 실물 롤아웃 30회 검증 — **86.7%** (근거리 100% · 원거리 66.7%) | ✅ 완료 |
+| 08/31 | 산출물 정본 마감 | ✅ 완료 |
+| 09/01 ~ 09/03 | 제출물 제작 · 저장소 정본화 (W14) | 진행 |
+| **09/03** | ★ 예선 접수 마감 — 구글폼 제출 | 예정 |
 
-전체 13주 배치는 [`docs/schedule/작업일정_전체_2026-06-01_2026-08-31.md`](02_schedule/작업일정_전체_2026-06-01_2026-08-31.md) 참조.
+전체 배치(13주 + W14)는 [`docs/02_schedule/작업일정_전체_2026-06-01_2026-09-03.md`](02_schedule/작업일정_전체_2026-06-01_2026-09-03.md) 참조.
 
 ## 9. 이슈 관리
 
