@@ -223,7 +223,7 @@
 ├── ros2_ws/              # ROS2 패키지 (RPi 5)
 ├── report/               # 개발완료보고서 빌드 시스템 (python-pptx)
 ├── tools/                # rpi_check.py · ros2_ws_sync.ps1
-├── archive/              # 폐기된 설계 · ENV v1~v8 · 초기 계획
+├── archive/              # 폐기된 ESP32 ARM 펌웨어 · ENV 스케치 v1~v8 이력
 └── README.md
 ```
 
