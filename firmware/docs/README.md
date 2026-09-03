@@ -12,5 +12,5 @@
 | 핀 배정 · 신호 배선표 (2026-08-14 확정) | [`docs/06_firmware/전력계통_실배선_2026-08-28.md` 2부](../../docs/06_firmware/전력계통_실배선_2026-08-28.md) |
 | 전력 계통 실배선 (2026-08-28) | [`docs/06_firmware/전력계통_실배선_2026-08-28.md`](../../docs/06_firmware/전력계통_실배선_2026-08-28.md) |
 | 만능기판 이전 가이드 | [`docs/06_firmware/만능기판_이전_가이드.md`](../../docs/06_firmware/만능기판_이전_가이드.md) |
-| v9 4센서 배선 가이드 | [`archive/`](../../archive/) |
+| ENV 보드 핀 배정 · 배선 | [`docs/06_firmware/전력계통_실배선_2026-08-28.md` 2부 §1](../../docs/06_firmware/전력계통_실배선_2026-08-28.md) |
 | ENV 보드 v11 가스 핸드셰이크 | [`docs/06_firmware/amr_v11_rpi_adaptive_gas_handoff_2026-08-29.md`](../../docs/06_firmware/amr_v11_rpi_adaptive_gas_handoff_2026-08-29.md) |
