@@ -32,7 +32,7 @@ COL = [64, 162, 260, 358, 456, 554, 652, 750, 848, 946, 1044, 1142]
 # 팀명은 「이상무」로 확정됐다(2026-09-03) — TEAM 은 팀번호까지 나와야 채울 수 있다.
 # 비워 두면 슬라이드에 「확정 후 삽입」으로 찍힌다.
 TEAM = ""            # "<팀번호>_이상무"  — 팀번호 미확인. 예: "A-12_이상무"
-GITHUB_URL = ""      # https://github.com/Hwansng/2026ESWContest_free_이상무
+GITHUB_URL = "https://github.com/Hwansng/2026ESWContest_free_ISANGMU"
 YOUTUBE_URL = ""     # https://youtu.be/…
 PENDING = "확정 후 삽입"
 
@@ -198,7 +198,7 @@ def p04():
         top += rh
 
     links = [("소스코드 링크", "GitHub", GITHUB_URL,
-              "github.com/Hwansng/2026ESWContest_free_이상무"),
+              "github.com/Hwansng/2026ESWContest_free_ISANGMU"),
              ("시연 동영상 링크", "YouTube", YOUTUBE_URL,
               "2026ESWContest_자유공모_이상무_시연동영상 · 3분 이내 · 720p 이상")]
     for i, (title, host, url, note) in enumerate(links):
