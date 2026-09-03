@@ -197,7 +197,7 @@
  # ➕ 폴더 구조
 
 ```
-HazardBot-2026/
+2026ESWContest_free_ISANGMU/
 ├── .github/workflows/    # CI (Arduino 컴파일 · ROS2 colcon build)
 ├── arm/                  # 로봇암 · ACT (PC 측)
 │   ├── tools/            # STS3215 제어·진단 도구 17종
