@@ -39,7 +39,7 @@ SLIDES = [
 
 # 키는 슬라이드 번호(s01~s22)이지 쪽번호가 아니다.
 NOTES = {
-    1: "🔴 팀번호만 미확인 (팀명 = 이상무) — build_deck.py 상단 TEAM 을 <팀번호>_이상무 로",
+    1: "표지 4번째 줄은 팀명 「이상무」만 넣는다 — 부여받은 팀번호가 없다",
     4: "시연 공간 사진 — 사진/전체 시연장.jpg",
     5: "🔴 GitHub · YouTube 링크는 확정 후 삽입 — build_deck.py 상단 "
        "GITHUB_URL / YOUTUBE_URL. 대회가 필수로 지정한 항목이다",
@@ -201,7 +201,7 @@ def build():
     <li>강조색 <b>#0066cc</b> 단일</li>
     <li>본문 하단 <b>y≤664</b> · 본문 20p 전부 통과</li>
     <li>제목 <b>y=76</b> · 헤더 룰 <b>y=158</b> 픽셀 동일</li>
-    <li>미확정 <b>팀번호 · GitHub · YouTube</b></li>
+    <li>미확정 <b>YouTube</b></li>
   </ul>
 </header>
 {''.join(nav)}
